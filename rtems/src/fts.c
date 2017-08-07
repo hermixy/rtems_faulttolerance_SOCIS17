@@ -1,6 +1,6 @@
 #include <rtems/rtems/fts.h>
 
-// can protect up to 255 tasks
+// can protect up to P_TASK tasks
 #define P_TASKS 10
 // data structure
 // list of task IDs
@@ -10,7 +10,7 @@ struct Task_ID_List {
   m_k task_list_mk[P_TASKS];
   fts_tech task_list_tech[P_TASKS];
   bitstring_pattern bmap[P_TASKS];
-  int task_list_index;
+  int task_list_index; //always is one position ahead of last filled
 } list;
 
 // typedef struct task_info {
@@ -21,7 +21,7 @@ struct Task_ID_List {
 
 
 // if task is in list already, return 1, -1 else
-int task_in_list(
+int16_t task_in_list(
   rtems_id id
 )
 {
@@ -36,7 +36,7 @@ int task_in_list(
 }
 
 // sets the sre execution pattern for a task
-int set_sre_pattern(
+int16_t set_sre_pattern(
   rtems_id id,
   bitstring_pattern bmap
 )
@@ -47,16 +47,36 @@ int set_sre_pattern(
     list.bmap[sre_index] = bmap;
     return 1;
   }
-  return 0;
+  return -1;
 }
 
+////
+
 fts_version sre_next_version(
-  int i
+  uint16_t i
 )
 {
     uint8_t bitpos = list.bmap[i].bitpos;
     uint8_t bit_mask_one = 1 << bitpos;
     uint8_t result_bit = (*(list.bmap[i].curr_pos)) & bit_mask_one;
+
+    if (list.bmap[i].bitpos < 7)
+    {
+      list.bmap[i].bitpos++;
+    }
+    else
+    {
+      if (list.bmap[i].pattern_end == list.bmap[i].curr_pos)
+      {
+        list.bmap[i].bitpos = 0;
+        list.bmap[i].curr_pos = list.bmap[i].pattern_start;
+      }
+      else
+      {
+      list.bmap[i].curr_pos++;
+      list.bmap[i].bitpos = 0;
+      }
+    }
 
     if (result_bit == 0)
     {
@@ -64,8 +84,6 @@ fts_version sre_next_version(
     }
     return RECOVERY;
 }
-
-
 
 /***/
 
@@ -99,7 +117,7 @@ fts_version fts_get_mode(
   rtems_id id
 )
 {
-  int task_index = task_in_list(id);
+  int16_t task_index = task_in_list(id);
   fts_version next_version;
   if (task_index != -1)
   {
@@ -110,7 +128,7 @@ fts_version fts_get_mode(
         break;
 
       case SRE :
-        next_version = RECOVERY;
+        next_version = sre_next_version(task_index);
         break;
 
       case SDR :
@@ -135,7 +153,23 @@ uint8_t fts_off(
   rtems_id id
 )
 {
-  return 1;
+  int16_t list_index = task_in_list(id);
+  if(list_index != -1)
+  {
+    for (int16_t i = 0; i < list.task_list_index; i++)
+    {
+      list.task_list_id[i] = list.task_list_id[i+1];
+      list.task_list_mk[i] = list.task_list_mk[i+1];
+      list.task_list_tech[i] = list.task_list_tech[i+1];
+      list.bmap[i] = list.bmap[i+1];
+      list.task_list_index--;
+    }
+    return 1;
+  }
+  else
+  {
+    return -1;
+  }
 }
 
 /***/
@@ -154,8 +188,7 @@ uint8_t fts_change_tech(
   fts_tech tech
 )
 {
-
-  int list_index = task_in_list(id);
+  int16_t list_index = task_in_list(id);
   if(list_index != -1)
   {
     list.task_list_tech[list_index] = tech;
