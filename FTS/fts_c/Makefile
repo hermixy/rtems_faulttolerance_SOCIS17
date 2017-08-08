@@ -8,8 +8,10 @@ PGM=${ARCH}/fts.exe
 MANAGERS=all
 
 # C source names
-CSRCS = test.c
+CSRCS = test.c tasks.c
 COBJS = $(CSRCS:%.c=${ARCH}/%.o)
+
+H_FILES=system.h
 
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 include $(RTEMS_CUSTOM)
