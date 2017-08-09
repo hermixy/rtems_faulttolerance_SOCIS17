@@ -2,13 +2,70 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <rtems/rtems/fts.h>
-#include "hea.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include <rtems/cpuuse.h>
+
+
+uint8_t setpatt = 0;
+fts_tech curr_tech = SRE;
+uint8_t pattsize = 16;
+uint8_t pattern_s;
+m_k mk = {4,4};
+
+
+static const uint32_t Periods[] = { 1000, 200 };
+static const rtems_name Task_name[] = {
+  rtems_build_name( 'T', 'A', '1', ' ' ),
+  rtems_build_name( 'T', 'A', '2', ' ' )
+};
+
+static const rtems_task_priority Prio[3] = { 2, 5 };
+static uint32_t tsk_counter[] = { 0, 0 }; //basic, recovery
+static rtems_id   Task_id[ 2 ];
+
+rtems_task Task_1(
+  rtems_task_argument unused
+)
+{
+    rtems_id selfid = rtems_task_self();
+
+    uint8_t reg_status = fts_rtems_task_register(selfid, mk, curr_tech);
+    if (reg_status == 1)
+    {
+      printf("\nTask_1 is registered!\n");
+    }
+
+    if (setpatt == 0)
+    {
+        uint8_t *b = &pattern_s;
+        uint8_t *e = b+2;
+
+        for (; b < e; ++b)
+          {
+            uint8_t bitw = 1;
+            for (uint8_t i = 0; i < 8; i++ )
+            {
+              *b = bitw & *b;
+              bitw = bitw << 1;
+            }
+          }
+
+          bitstring_pattern bmap = { .pattern_start = &pattern_s, .pattern_end = &pattern_s+pattsize-1, .curr_pos = &pattern_s, .bitpos = 0, .max_bitpos = 7};
+          int8_t bm_status = fts_set_sre_pattern(selfid, bmap);
+          if (bm_status==1)
+          {
+              printf("BMAP IS IN");
+          }
+
+    }
+
+    printf( "\nTASK_1\n\n");
+};
+
 
 rtems_task Init(
   rtems_task_argument ignored
@@ -27,7 +84,7 @@ rtems_task Init(
       &Task_id[ index ]
     );
 
-  /* put tasks in ready state */  
+  /* put tasks in ready state */
   status = rtems_task_start(Task_id[index], Task_1, index);
 
   if ( status )

@@ -183,7 +183,7 @@ uint8_t fts_task_status(
 
 /***/
 
-int8_t fts_change_tech(
+uint8_t fts_change_tech(
   rtems_id id,
   fts_tech tech
 )

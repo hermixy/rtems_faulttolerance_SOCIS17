@@ -33,7 +33,7 @@ typedef enum {
  */
 typedef struct {
   uint8_t m;
-  uint8_t int k;
+  uint8_t k;
 } m_k;
 
 /**
