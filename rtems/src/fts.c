@@ -121,7 +121,7 @@ fts_version fts_get_mode(
   fts_version next_version;
   if (task_index != -1)
   {
-    switch(list.task_list_tech[id])
+    switch(list.task_list_tech[task_index])
     {
       case NONE :
         next_version = BASIC;

@@ -15,7 +15,7 @@ fts_tech curr_tech = SRE;
 uint8_t pattsize = 16;
 uint8_t pattern_s;
 m_k mk = {4,4};
-
+uint16_t counts = 0;
 
 static const uint32_t Periods[] = { 1000, 200 };
 static const rtems_name Task_name[] = {
@@ -31,12 +31,18 @@ rtems_task Task_1(
   rtems_task_argument unused
 )
 {
+  while (1) {
+    /* code */
+
     rtems_id selfid = rtems_task_self();
 
     uint8_t reg_status = fts_rtems_task_register(selfid, mk, curr_tech);
     if (reg_status == 1)
     {
-      printf("\nTask_1 is registered!\n");
+      printf("\nTask_1 was registered!\n");
+    }
+    else{
+      printf("\nTask_1 ALREADY registered!\n");
     }
 
     if (setpatt == 0)
@@ -49,7 +55,7 @@ rtems_task Task_1(
             uint8_t bitw = 1;
             for (uint8_t i = 0; i < 8; i++ )
             {
-              *b = bitw & *b;
+              *b = bitw | *b;
               bitw = bitw << 1;
             }
           }
@@ -60,10 +66,27 @@ rtems_task Task_1(
           {
               printf("BMAP IS IN");
           }
-
+          setpatt = 1;
     }
 
-    printf( "\nTASK_1\n\n");
+    fts_version next_mode = fts_get_mode(selfid);
+    switch(next_mode)
+    {
+      case RECOVERY :
+        printf("RECOVERY\n");
+        break;
+
+      case DETECTION :
+        printf("DETECTION\n");
+        break;
+
+      case BASIC :
+        printf("BASIC\n");
+        break;
+    }
+    counts++;
+    printf("%i/n", counts);
+  }
 };
 
 
