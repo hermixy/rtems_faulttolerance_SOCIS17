@@ -11,7 +11,7 @@ MANAGERS=all
 CSRCS = test.c tasks.c
 COBJS = $(CSRCS:%.c=${ARCH}/%.o)
 
-H_FILES=system.h
+H_FILES=system.h fts.h hea.h
 
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 include $(RTEMS_CUSTOM)

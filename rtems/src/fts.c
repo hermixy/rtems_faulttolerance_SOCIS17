@@ -10,7 +10,7 @@ struct Task_ID_List {
   m_k task_list_mk[P_TASKS];
   fts_tech task_list_tech[P_TASKS];
   bitstring_pattern bmap[P_TASKS];
-  int task_list_index; //always is one position ahead of last filled
+  uint16_t task_list_index; //always is one position ahead of last filled
 } list;
 
 // typedef struct task_info {
@@ -36,7 +36,7 @@ int16_t task_in_list(
 }
 
 // sets the sre execution pattern for a task
-int16_t set_sre_pattern(
+int8_t fts_set_sre_pattern(
   rtems_id id,
   bitstring_pattern bmap
 )
@@ -52,8 +52,8 @@ int16_t set_sre_pattern(
 
 ////
 
-fts_version sre_next_version(
-  uint16_t i
+static fts_version sre_next_version(
+  int i
 )
 {
     uint8_t bitpos = list.bmap[i].bitpos;
@@ -93,7 +93,7 @@ uint8_t fts_rtems_task_register(
   fts_tech tech
 )
 {
-  if((list.task_list_index < P_TASKS) && (task_list_index(id) == -1) && (mk.m <= mk.k))
+  if ((list.task_list_index < P_TASKS) && (task_in_list(id) == -1) && (mk.m <= mk.k))
   {
     list.task_list_id[list.task_list_index] = id;
     list.task_list_mk[list.task_list_index] = mk;
@@ -162,7 +162,7 @@ uint8_t fts_off(
       list.task_list_mk[i] = list.task_list_mk[i+1];
       list.task_list_tech[i] = list.task_list_tech[i+1];
       list.bmap[i] = list.bmap[i+1];
-      list.task_list_index--;
+      //list.task_list_index--;
     }
     return 1;
   }
@@ -183,7 +183,7 @@ uint8_t fts_task_status(
 
 /***/
 
-uint8_t fts_change_tech(
+int8_t fts_change_tech(
   rtems_id id,
   fts_tech tech
 )
@@ -194,7 +194,7 @@ uint8_t fts_change_tech(
     list.task_list_tech[list_index] = tech;
     return 1;
   }
-return 0;
+return -1;
 }
 
 

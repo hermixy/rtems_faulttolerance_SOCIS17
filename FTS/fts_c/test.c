@@ -1,7 +1,3 @@
-/*
- *  Classic API Hello World
- */
-
 #include <rtems.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,7 +27,7 @@ rtems_task Init(
       &Task_id[ index ]
     );
 
-
+  /* put tasks in ready state */  
   status = rtems_task_start(Task_id[index], Task_1, index);
 
   if ( status )

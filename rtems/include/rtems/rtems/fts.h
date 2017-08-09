@@ -32,8 +32,8 @@ typedef enum {
  * http://ls12-www.cs.tu-dortmund.de/daes/media/documents/publications/downloads/2016-khchen-lctes.pdf
  */
 typedef struct {
-  unsigned int m;
-  unsigned int k;
+  uint8_t m;
+  uint8_t int k;
 } m_k;
 
 /**
@@ -114,7 +114,7 @@ uint8_t fts_task_status(
 );
 
 /**
- * @Changes the technique of a task
+ * @brief Changes the technique of a task
  *
  * Changes the fault tolerance technique of a specific task to the one
  * specified in the parameter.
@@ -123,4 +123,16 @@ uint8_t fts_task_status(
 uint8_t fts_change_tech(
   rtems_id id,
   fts_tech tech
+);
+
+/**
+ * @brief sets the sre pattern
+ *
+ *
+ *
+ *1
+ */
+int8_t fts_set_sre_pattern(
+  rtems_id id,
+  bitstring_pattern bmap
 );
