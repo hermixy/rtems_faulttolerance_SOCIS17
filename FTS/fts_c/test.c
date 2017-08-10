@@ -9,12 +9,9 @@
 
 #include <rtems/cpuuse.h>
 
-
 uint8_t setpatt = 0;
 fts_tech curr_tech = SRE;
-uint8_t pattsize = 16;
-uint8_t pattern_s;
-m_k mk = {4,4};
+
 uint16_t counts = 0;
 
 static const uint32_t Periods[] = { 1000, 200 };
@@ -31,40 +28,57 @@ rtems_task Task_1(
   rtems_task_argument unused
 )
 {
-  while (1) {
-    /* code */
-
+  //while (1) {
+    /* (m,k) test */
     rtems_id selfid = rtems_task_self();
+    m_k mk = {.m = 4, .k = 4};
+    uint8_t ml = mk.m;
+    printf("\nT1: m = %i\n", ml );
 
+    /* begin test fts_rtems_task_register */
     uint8_t reg_status = fts_rtems_task_register(selfid, mk, curr_tech);
     if (reg_status == 1)
     {
-      printf("\nTask_1 was registered!\n");
+      printf("\nT1: Task_1 was registered!\n");
     }
     else{
-      printf("\nTask_1 ALREADY registered!\n");
+      printf("\nT: Task_1 ALREADY registered!\n");
     }
+    /* end test fts_rtems_task_register */
+
+    /* Test setting a pattern */
+    /* Initiate 16 bit pattern */
+    uint8_t pattern_s = 0;
+    uint8_t * const p_s = &pattern_s;
+    uint8_t * const p_e = p_s + 1;
+    *p_e = 0;
 
     if (setpatt == 0)
     {
-        uint8_t *b = &pattern_s;
-        uint8_t *e = b+2;
+        uint8_t *p_curr = p_s;
 
-        for (; b < e; ++b)
+        for (; p_curr <= p_e; p_curr++)
           {
-            uint8_t bitw = 1;
-            for (uint8_t i = 0; i < 8; i++ )
+            uint8_t b_mask = 1;
+            uint8_t c_byte = *p_curr;
+
+            for (uint8_t i = 0; i < 8; i++)
             {
-              *b = bitw | *b;
-              bitw = bitw << 1;
+              c_byte = b_mask | c_byte;
+              b_mask <<= 1;
             }
           }
 
-          bitstring_pattern bmap = { .pattern_start = &pattern_s, .pattern_end = &pattern_s+pattsize-1, .curr_pos = &pattern_s, .bitpos = 0, .max_bitpos = 7};
-          int8_t bm_status = fts_set_sre_pattern(selfid, bmap);
+          bitstring_pattern pattern = { .pattern_start = p_s, .pattern_end = p_e , .curr_pos = p_s, .bitpos = 0, .max_bitpos = 7};
+
+          printf("\n***TEST.C***\n");
+          show_pattern(p_s, p_e, 7);
+          printf("***TEST.C***\n");
+
+          int8_t bm_status = fts_set_sre_pattern(selfid, pattern);
           if (bm_status==1)
           {
-              printf("BMAP IS IN");
+              printf("\nT1: Pattern is stored.\n");
           }
           setpatt = 1;
     }
@@ -73,21 +87,23 @@ rtems_task Task_1(
     switch(next_mode)
     {
       case RECOVERY :
-        printf("RECOVERY\n");
+        printf("\nT1: RECOVERY\n");
         break;
 
       case DETECTION :
-        printf("DETECTION\n");
+        printf("\nT1: DETECTION\n");
         break;
 
       case BASIC :
-        printf("BASIC\n");
+        printf("\nT1: BASIC\n");
         break;
     }
     counts++;
-    printf("%i/n", counts);
-  }
+    printf("\nT1: nr of jobs: %i/n", counts);
+  //}
 };
+
+
 
 
 rtems_task Init(
@@ -112,7 +128,7 @@ rtems_task Init(
 
   if ( status )
   {
-    printf( "unable to create task1\n" );
+    printf( "\nunable to create task1\n" );
   }
 
   int i = 0;
