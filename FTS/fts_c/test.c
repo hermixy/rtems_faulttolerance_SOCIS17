@@ -24,11 +24,45 @@ static const rtems_task_priority Prio[3] = { 2, 5 };
 static uint32_t tsk_counter[] = { 0, 0 }; //basic, recovery
 static rtems_id   Task_id[ 2 ];
 
+uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
+{
+  /* Start output pattern */
+  printf("\n\nT1: The pattern is:\n");
+
+  for (; p_curr <= p_end; p_curr++)
+  {
+    uint8_t b_mask = 128;
+    uint8_t c_byte = *p_curr;
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        uint8_t output = b_mask & c_byte;
+
+        if (output == 0)
+        {
+          printf("0");
+        }
+        else
+        {
+          printf("1");
+        }
+        b_mask >>= 1;
+    }
+    printf("\n");
+    //break;
+  }
+}
+
 rtems_task Task_1(
   rtems_task_argument unused
 )
 {
-  //while (1) {
+  uint8_t runs = 0;
+  while (runs <= 16) {
+
+    printf("\n---------\n");
+    runs++;
+
     /* (m,k) test */
     rtems_id selfid = rtems_task_self();
     m_k mk = {.m = 4, .k = 4};
@@ -62,18 +96,31 @@ rtems_task Task_1(
             uint8_t b_mask = 1;
             uint8_t c_byte = *p_curr;
 
+            /*
             for (uint8_t i = 0; i < 8; i++)
             {
-              c_byte = b_mask | c_byte;
+
+              if(i==2)
+              {
+                c_byte = b_mask & c_byte;
+              }
+              else
+              {
+                c_byte = b_mask | c_byte;
+              }
               b_mask <<= 1;
-            }
+              }
+              *p_curr = *p_curr | c_byte;
+              */
+              *p_curr = 248;
+
           }
 
           bitstring_pattern pattern = { .pattern_start = p_s, .pattern_end = p_e , .curr_pos = p_s, .bitpos = 0, .max_bitpos = 7};
 
           printf("\n***TEST.C***\n");
-          show_pattern(p_s, p_e, 7);
-          printf("***TEST.C***\n");
+          s_p(p_s, p_e, 7);
+          printf("\n***TEST.C***\n");
 
           int8_t bm_status = fts_set_sre_pattern(selfid, pattern);
           if (bm_status==1)
@@ -100,7 +147,7 @@ rtems_task Task_1(
     }
     counts++;
     printf("\nT1: nr of jobs: %i/n", counts);
-  //}
+  }
 };
 
 

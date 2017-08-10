@@ -2,6 +2,7 @@
 
 // can protect up to P_TASK tasks
 #define P_TASKS 10
+#define BIT_7 128
 // data structure
 // list of task IDs
 
@@ -35,19 +36,20 @@ int16_t task_in_list(
   return -1;
 }
 
+/* Show the execution pattern in the console */
 uint8_t show_pattern(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
 {
-  /* Start output pattern */
-  printf("\n\nfts.c: The pattern is: ");
+  printf("\n\nfts.c: The pattern is:\n ");
 
   for (; p_curr <= p_end; p_curr++)
   {
-    uint8_t b_mask = 1;
+    uint8_t b_mask = BIT_7;
+
     uint8_t c_byte = *p_curr;
 
     for (uint8_t i = 0; i < 8; i++)
     {
-        uint8_t output = b_mask | c_byte;
+        uint8_t output = b_mask & c_byte;
 
         if (output == 0)
         {
@@ -57,12 +59,13 @@ uint8_t show_pattern(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
         {
           printf("1");
         }
-        b_mask <<= 1;
+        b_mask >>= 1;
     }
+    printf("\n");
+    //break;
   }
   printf("\n\n");
   /* End output pattern */
-
   return 0;
 }
 
@@ -83,7 +86,8 @@ int8_t fts_set_sre_pattern(
     uint8_t *p_end = list.pattern[sre_index].pattern_end;
 
     show_pattern(p_curr, p_end, 7);
-
+    // set current pos as startin
+    //teile einzeln senden
     return 1;
   }
   return -1;
@@ -96,8 +100,10 @@ static fts_version sre_next_version(
 )
 {
     uint8_t bitpos = list.pattern[i].bitpos;
+    uint8_t c_byte = *(list.pattern[i].curr_pos);
     uint8_t bit_mask_one = 1 << bitpos;
-    uint8_t result_bit = (*(list.pattern[i].curr_pos)) & bit_mask_one;
+
+    uint8_t result_bit = c_byte & bit_mask_one;
 
     if (list.pattern[i].bitpos < 7)
     {
@@ -105,15 +111,15 @@ static fts_version sre_next_version(
     }
     else
     {
-      if (list.pattern[i].pattern_end == list.pattern[i].curr_pos)
+      if (list.pattern[i].pattern_end == c_byte)
       {
         list.pattern[i].bitpos = 0;
         list.pattern[i].curr_pos = list.pattern[i].pattern_start;
       }
       else
       {
-      list.pattern[i].curr_pos++;
       list.pattern[i].bitpos = 0;
+      list.pattern[i].curr_pos++;
       }
     }
 
