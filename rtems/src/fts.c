@@ -40,7 +40,7 @@ int16_t task_in_list(
 /* Show the execution pattern in the console */
 uint8_t show_pattern(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
 {
-  printf("\nfts.c: The pattern is:\n");
+  printf("\n\nfts.c: The pattern is:\n");
 
   for (; p_curr <= p_end; p_curr++)
   {
@@ -86,6 +86,7 @@ int8_t fts_set_sre_pattern(
     uint8_t *p_curr = list.pattern[sre_index]->pattern_start;
     uint8_t *p_end = list.pattern[sre_index]->pattern_end;
 
+    printf("\n(set_sre_pattern)\n");
     show_pattern(p_curr, p_end, 7);
 
     return 1;
@@ -97,6 +98,12 @@ static fts_version sre_next_version(
   int i
 )
 {
+    printf("\nfts.c (sre_next_version):  index is %i\n", i);
+    printf("\nfts.c (sre_next_version):\n");
+
+    printf("\nIn sre_next_version:");
+    show_pattern(list.pattern[i]->pattern_start, list.pattern[i]->pattern_end, 7);
+
     uint8_t bitpos = list.pattern[i]->bitpos; // bit to be read
     uint8_t c_byte = list.pattern[i]->curr_pos; // byte to be read
     uint8_t bit_mask_one = BIT_7 >> bitpos;
@@ -139,26 +146,29 @@ uint8_t fts_rtems_task_register(
 {
   if ((list.task_list_index < P_TASKS) && (task_in_list(id) == -1) && (m_ <= k_) )
   {
-    /* Test (m,k) output */
-
-    printf("\nfts.c: test m = %i\n", m_);
-    printf("\nfts.c: test k = %i\n", k_);
-
     /* Put all information in the tasklist */
-    printf("\nfts.c: ID: %i\n", list.task_list_id[list.task_list_index]);
-    list.m[list.task_list_index] = m_;
+    list.task_list_id[list.task_list_index] = id;
+    //output
+    printf("\nfts.c (register): ID %i\n", list.task_list_id[list.task_list_index]);
 
+    list.task_list_tech[list.task_list_index] = tech;
+    //output
+    printf("\nfts.c (register): Tech %i\n", list.task_list_tech[list.task_list_index]);
+
+    list.m[list.task_list_index] = m_;
     list.k[list.task_list_index] = k_;
 
+    uint8_t m_m = list.m[list.task_list_index];
+    uint8_t k_k = list.k[list.task_list_index];
+
+    printf("\nfts.c (register): List index %i\n", list.task_list_index);
     list.task_list_index++;
+
     /* Generate (m,k)-pattern, then put in list */
 
     /*  */
 
-    /* Output values for (m,k) */
-    uint8_t m_m = list.m[list.task_list_index];
-    uint8_t k_k = list.k[list.task_list_index];
-
+    /* Output values for (m,k) and ID */
     printf("\nfts.c: m = %i\n", m_m);
     printf("\nfts.c: k = %i\n", k_k);
     /*  */
@@ -181,7 +191,11 @@ fts_version fts_get_mode(
   rtems_id id
 )
 {
+  printf("\nfts.c (get mode) ID: %i\n", id);
   int16_t task_index = task_in_list(id);
+
+  printf("\nfts.c (get mode): list index %i\n", task_index);
+
   fts_version next_version;
   if (task_index != -1)
   {
@@ -189,22 +203,27 @@ fts_version fts_get_mode(
     {
       case NONE :
         next_version = BASIC;
+        printf("\nfts.c (get_mode): NONE\n");
         break;
 
       case SRE :
         next_version = sre_next_version(task_index);
+        printf("\nfts.c (get_mode): SRE\n");
         break;
 
       case SDR :
         next_version = RECOVERY;
+        printf("\nfts.c (get_mode): SDR\n");
         break;
 
       case DRE :
         next_version = RECOVERY;
+        printf("\nfts.c (get_mode): DRE\n");
         break;
 
       case DDR :
         next_version = RECOVERY;
+        printf("\nfts.c (get_mode): DDR\n");
         break;
     }
   }

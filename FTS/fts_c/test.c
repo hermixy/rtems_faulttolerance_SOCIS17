@@ -9,6 +9,8 @@
 
 #include <rtems/cpuuse.h>
 
+#define MAX_IT
+
 uint8_t setpatt = 0;
 fts_tech curr_tech = SRE;
 
@@ -24,6 +26,19 @@ static const rtems_task_priority Prio[3] = { 2, 5 };
 static uint32_t tsk_counter[] = { 0, 0 }; //basic, recovery
 static rtems_id   Task_id[ 2 ];
 
+/* Initiate 24 bit pattern */
+// bytes are initialized bottom to top
+uint8_t end_p = 0; // first byte of pattern
+uint8_t mid_p = 0; // second byte
+uint8_t begin_p = 0; //last byte
+
+uint8_t * const p_s = &begin_p; // address of first byte
+//why can't I change the valie of *p_e when I do
+//uint8_t * const p_e  = p_s+1;
+uint8_t * const p_m  = &mid_p;
+uint8_t * const p_e  = &end_p;
+
+/* Show pattern */
 uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
 {
   /* Start output pattern */
@@ -53,24 +68,27 @@ uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
   }
 }
 
+/* Task 1 - Test */
 rtems_task Task_1(
   rtems_task_argument unused
 )
 {
   uint8_t runs = 0;
-  while (runs <= 8) {
+  while (runs <= 24) {
 
     printf("\n---------\n");
-    runs++;
-    /* (m,k) test */
+    runs++; // only a few jobs
+
     rtems_id selfid = rtems_task_self();
 
+    /* (m,k) test - set (m,k) */
     uint8_t m = 11;
     uint8_t k = 16;
 
-    /* begin test fts_rtems_task_register */
-    if (runs == 1)
+    /* test fts_rtems_task_register */
+    if (runs == 1) //only first run
     {
+      /* Register Task to FTS */
       uint8_t reg_status = fts_rtems_task_register(selfid, m, k, curr_tech);
       if (reg_status == 1)
       {
@@ -78,30 +96,23 @@ rtems_task Task_1(
       }
       else
       {
-        printf("\nT: Task_1 ALREADY registered!\n");
+        printf("\nT: Task_1 already registered!\n");
       }
     }
 
-    /* end test fts_rtems_task_register */
-
     /* Test setting a pattern */
-    /* Initiate 16 bit pattern */
 
-    uint8_t begin_p = 0;
-    uint8_t end_p = 0;
 
-    uint8_t * const p_s = &begin_p;
-    //WHY can't I change the valie of *p_e when I do
-    //uint8_t * const p_e  = p_s+1;
-    uint8_t * const p_e  = &end_p;
-    if (setpatt == 0)
+
+    /* Pattern initialization and registration */
+    if (setpatt == 0) // only once
     {
-
-
+        /* Print the addresses of pointers */
         printf("\nT1: Address of p_s: %p\n", (void *)p_s);
+        printf("\nT1: Address of p_m: %p\n", (void *)p_m);
         printf("\nT1: Address of p_e: %p\n", (void *)p_e);
         uint8_t *p_curr = p_s;
-
+        /* TODO: Algorithm to set pattern  */
         //for (; p_curr <= p_e; p_curr++)
           //{
             uint8_t b_mask = 1;
@@ -124,16 +135,20 @@ rtems_task Task_1(
               *p_curr = *p_curr | c_byte;
               */
               *p_s = 248;
-              *p_e = 3;
+              *p_m = 3;
+              *p_e = 4;
 
           //}
 
+          /* Build pattern struct */
           bitstring_pattern pattern = { .pattern_start = p_s, .pattern_end = p_e , .curr_pos = p_s, .bitpos = 0, .max_bitpos = 7};
 
-          s_p(p_s, p_e, 7); // show pattern
+          /* show pattern */
+          s_p(p_s, p_e, 7);
 
           bitstring_pattern *p = &pattern;
 
+          /* Set pattern to the FTS */
           int8_t bm_status = fts_set_sre_pattern(selfid, p);
           if (bm_status==1)
           {
@@ -142,11 +157,13 @@ rtems_task Task_1(
           setpatt = 1;
     }
 
+    /* Get execution mode for this task instance */
     fts_version next_mode = fts_get_mode(selfid);
     switch(next_mode)
     {
       case RECOVERY :
         printf("\nT1: RECOVERY\n");
+        tsk_counter[1]++;
         break;
 
       case DETECTION :
@@ -155,16 +172,22 @@ rtems_task Task_1(
 
       case BASIC :
         printf("\nT1: BASIC\n");
+        tsk_counter[0]++;
         break;
     }
     counts++;
-    printf("\nT1: nr of jobs: %i/n", counts);
+    printf("\nT1: nr of jobs: %i\n", counts);
+
+  if (counts == 24)
+  {
+    printf("\nT1: #B: %i, #R: %i\n", tsk_counter[0], tsk_counter[1]);
   }
+
+}
+
 };
 
-
-
-
+/* Initialization: Create and start task */
 rtems_task Init(
   rtems_task_argument ignored
 )
@@ -185,6 +208,9 @@ rtems_task Init(
   /* put tasks in ready state */
   status = rtems_task_start(Task_id[index], Task_1, index);
 
+  rtems_id id = rtems_task_self();
+  printf("\nInit: fts.c: ID: %i\n", id);
+
   if ( status )
   {
     printf( "\nunable to create task1\n" );
@@ -192,8 +218,8 @@ rtems_task Init(
 
   int i = 0;
   i = fts_init_versions();
-  printf( "\n**TEST**\n" );
-  printf("%d\n",i);
+  printf( "\nInit: **FTS TEST**\n" );
+  printf("\nInit: %d\n",i);
   rtems_task_delete( rtems_task_self() );
 
 }
