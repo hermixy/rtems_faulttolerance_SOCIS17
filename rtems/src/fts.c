@@ -40,7 +40,7 @@ int16_t task_in_list(
 /* Show the execution pattern in the console */
 uint8_t show_pattern(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
 {
-  printf("\n\nfts.c: The pattern is:\n ");
+  printf("\nfts.c: The pattern is:\n");
 
   for (; p_curr <= p_end; p_curr++)
   {
@@ -80,15 +80,14 @@ int8_t fts_set_sre_pattern(
   //if( (sre_index != -1) && list.task_list_tech[sre_index] == SRE )
   //{
     list.pattern[sre_index] = p;
-    
+
     show_pattern(p->pattern_start, p->pattern_end, 7);
 
     uint8_t *p_curr = list.pattern[sre_index]->pattern_start;
     uint8_t *p_end = list.pattern[sre_index]->pattern_end;
 
     show_pattern(p_curr, p_end, 7);
-    // set current pos as startin
-    //teile einzeln senden
+
     return 1;
 }
 
@@ -98,9 +97,9 @@ static fts_version sre_next_version(
   int i
 )
 {
-    uint8_t bitpos = list.pattern[i]->bitpos;
-    uint8_t c_byte = *(list.pattern[i]->curr_pos);
-    uint8_t bit_mask_one = 1 << bitpos;
+    uint8_t bitpos = list.pattern[i]->bitpos; // bit to be read
+    uint8_t c_byte = list.pattern[i]->curr_pos; // byte to be read
+    uint8_t bit_mask_one = BIT_7 >> bitpos;
 
     uint8_t result_bit = c_byte & bit_mask_one;
 
@@ -140,15 +139,13 @@ uint8_t fts_rtems_task_register(
 {
   if ((list.task_list_index < P_TASKS) && (task_in_list(id) == -1) && (m_ <= k_) )
   {
-    // remove mk struct
     /* Test (m,k) output */
 
     printf("\nfts.c: test m = %i\n", m_);
     printf("\nfts.c: test k = %i\n", k_);
 
     /* Put all information in the tasklist */
-    list.task_list_id[list.task_list_index] = id;
-
+    printf("\nfts.c: ID: %i\n", list.task_list_id[list.task_list_index]);
     list.m[list.task_list_index] = m_;
 
     list.k[list.task_list_index] = k_;
@@ -156,12 +153,15 @@ uint8_t fts_rtems_task_register(
     list.task_list_index++;
     /* Generate (m,k)-pattern, then put in list */
 
+    /*  */
+
     /* Output values for (m,k) */
     uint8_t m_m = list.m[list.task_list_index];
     uint8_t k_k = list.k[list.task_list_index];
 
-    printf("\nfts.c: hi m = %i\n", m_m);
+    printf("\nfts.c: m = %i\n", m_m);
     printf("\nfts.c: k = %i\n", k_k);
+    /*  */
 
     return 1;
   }

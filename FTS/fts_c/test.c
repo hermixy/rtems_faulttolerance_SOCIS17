@@ -27,7 +27,7 @@ static rtems_id   Task_id[ 2 ];
 uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
 {
   /* Start output pattern */
-  printf("\n\nT1: The pattern is:\n");
+  printf("\nT1: The pattern is:\n");
 
   for (; p_curr <= p_end; p_curr++)
   {
@@ -62,7 +62,6 @@ rtems_task Task_1(
 
     printf("\n---------\n");
     runs++;
-
     /* (m,k) test */
     rtems_id selfid = rtems_task_self();
 
@@ -87,17 +86,24 @@ rtems_task Task_1(
 
     /* Test setting a pattern */
     /* Initiate 16 bit pattern */
-    uint8_t pattern_s = 0;
-    uint8_t * const p_s = &pattern_s;
-    uint8_t * const p_e = p_s + 1;
-    *p_e = 0;
 
+    uint8_t begin_p = 0;
+    uint8_t end_p = 0;
+
+    uint8_t * const p_s = &begin_p;
+    //WHY can't I change the valie of *p_e when I do
+    //uint8_t * const p_e  = p_s+1;
+    uint8_t * const p_e  = &end_p;
     if (setpatt == 0)
     {
+
+
+        printf("\nT1: Address of p_s: %p\n", (void *)p_s);
+        printf("\nT1: Address of p_e: %p\n", (void *)p_e);
         uint8_t *p_curr = p_s;
 
-        for (; p_curr <= p_e; p_curr++)
-          {
+        //for (; p_curr <= p_e; p_curr++)
+          //{
             uint8_t b_mask = 1;
             uint8_t c_byte = *p_curr;
 
@@ -117,15 +123,14 @@ rtems_task Task_1(
               }
               *p_curr = *p_curr | c_byte;
               */
-              *p_curr = 248;
+              *p_s = 248;
+              *p_e = 3;
 
-          }
+          //}
 
           bitstring_pattern pattern = { .pattern_start = p_s, .pattern_end = p_e , .curr_pos = p_s, .bitpos = 0, .max_bitpos = 7};
 
-          printf("\n***TEST.C***\n");
           s_p(p_s, p_e, 7); // show pattern
-          printf("\n***TEST.C***\n");
 
           bitstring_pattern *p = &pattern;
 
@@ -189,7 +194,6 @@ rtems_task Init(
   i = fts_init_versions();
   printf( "\n**TEST**\n" );
   printf("%d\n",i);
-  printf( "\n**TEST**\n" );
   rtems_task_delete( rtems_task_self() );
 
 }
