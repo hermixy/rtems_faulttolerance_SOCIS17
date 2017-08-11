@@ -8,9 +8,10 @@
 
 struct Task_ID_List {
   rtems_id task_list_id[P_TASKS];
-  m_k task_list_mk[P_TASKS];
+  uint8_t m[P_TASKS];
+  uint8_t k[P_TASKS];
   fts_tech task_list_tech[P_TASKS];
-  bitstring_pattern pattern[P_TASKS];
+  bitstring_pattern *pattern[P_TASKS];
   uint16_t task_list_index; //always is one position ahead of last filled
 } list;
 
@@ -72,25 +73,23 @@ uint8_t show_pattern(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
 // sets the sre execution pattern for a task
 int8_t fts_set_sre_pattern(
   rtems_id id,
-  bitstring_pattern pattern
+  bitstring_pattern *p
 )
 {
-  int sre_index = task_in_list(id);
-  if( (sre_index != -1) && list.task_list_tech[sre_index] == SRE )
-  {
-    list.pattern[sre_index] = pattern;
+    int sre_index = task_in_list(id);
+  //if( (sre_index != -1) && list.task_list_tech[sre_index] == SRE )
+  //{
+    list.pattern[sre_index] = p;
+    
+    show_pattern(p->pattern_start, p->pattern_end, 7);
 
-    show_pattern(pattern.pattern_start, pattern.pattern_end, 7);
-
-    uint8_t *p_curr = list.pattern[sre_index].pattern_start;
-    uint8_t *p_end = list.pattern[sre_index].pattern_end;
+    uint8_t *p_curr = list.pattern[sre_index]->pattern_start;
+    uint8_t *p_end = list.pattern[sre_index]->pattern_end;
 
     show_pattern(p_curr, p_end, 7);
     // set current pos as startin
     //teile einzeln senden
     return 1;
-  }
-  return -1;
 }
 
 ////
@@ -99,27 +98,27 @@ static fts_version sre_next_version(
   int i
 )
 {
-    uint8_t bitpos = list.pattern[i].bitpos;
-    uint8_t c_byte = *(list.pattern[i].curr_pos);
+    uint8_t bitpos = list.pattern[i]->bitpos;
+    uint8_t c_byte = *(list.pattern[i]->curr_pos);
     uint8_t bit_mask_one = 1 << bitpos;
 
     uint8_t result_bit = c_byte & bit_mask_one;
 
-    if (list.pattern[i].bitpos < 7)
+    if (list.pattern[i]->bitpos < 7)
     {
-      list.pattern[i].bitpos++;
+      list.pattern[i]->bitpos++;
     }
     else
     {
-      if (list.pattern[i].pattern_end == c_byte)
+      if (list.pattern[i]->pattern_end == c_byte)
       {
-        list.pattern[i].bitpos = 0;
-        list.pattern[i].curr_pos = list.pattern[i].pattern_start;
+        list.pattern[i]->bitpos = 0;
+        list.pattern[i]->curr_pos = list.pattern[i]->pattern_start;
       }
       else
       {
-      list.pattern[i].bitpos = 0;
-      list.pattern[i].curr_pos++;
+      list.pattern[i]->bitpos = 0;
+      list.pattern[i]->curr_pos++;
       }
     }
 
@@ -134,33 +133,35 @@ static fts_version sre_next_version(
 
 uint8_t fts_rtems_task_register(
   rtems_id id,
-  m_k mk,
+  uint8_t m_,
+  uint8_t k_,
   fts_tech tech
 )
 {
-  if ((list.task_list_index < P_TASKS) && (task_in_list(id) == -1) && (mk.m <= mk.k))
+  if ((list.task_list_index < P_TASKS) && (task_in_list(id) == -1) && (m_ <= k_) )
   {
     // remove mk struct
     /* Test (m,k) output */
-    m_k bmk = mk;
-    uint8_t test_m = bmk.m;
-    printf("\nfts.c: m = %i\n", test_m);
+
+    printf("\nfts.c: test m = %i\n", m_);
+    printf("\nfts.c: test k = %i\n", k_);
 
     /* Put all information in the tasklist */
     list.task_list_id[list.task_list_index] = id;
-    list.task_list_mk[list.task_list_index] = mk;
-    list.task_list_tech[list.task_list_index] = tech;
-    printf("\nfts.c: list index is: %i\n",  list.task_list_index);
+
+    list.m[list.task_list_index] = m_;
+
+    list.k[list.task_list_index] = k_;
+
     list.task_list_index++;
-    printf("\nfts.c: list index is: %i\n",  list.task_list_index);
     /* Generate (m,k)-pattern, then put in list */
 
     /* Output values for (m,k) */
-    m_k currmk = list.task_list_mk[list.task_list_index];
-    uint8_t m_m = currmk.m;
-    uint8_t k_k = currmk.k;
+    uint8_t m_m = list.m[list.task_list_index];
+    uint8_t k_k = list.k[list.task_list_index];
 
-    printf("\nfts.c: m = %i\n", m_m);
+    printf("\nfts.c: hi m = %i\n", m_m);
+    printf("\nfts.c: k = %i\n", k_k);
 
     return 1;
   }
@@ -222,11 +223,13 @@ uint8_t fts_off(
     for (int16_t i = 0; i < list.task_list_index; i++)
     {
       list.task_list_id[i] = list.task_list_id[i+1];
-      list.task_list_mk[i] = list.task_list_mk[i+1];
+      list.m[i] = list.m[i+1];
+      list.k[i] = list.k[i+1];
       list.task_list_tech[i] = list.task_list_tech[i+1];
       list.pattern[i] = list.pattern[i+1];
-      //list.task_list_index--;
+
     }
+    list.task_list_index--;
     return 1;
   }
   else

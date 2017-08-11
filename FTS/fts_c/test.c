@@ -58,26 +58,31 @@ rtems_task Task_1(
 )
 {
   uint8_t runs = 0;
-  while (runs <= 16) {
+  while (runs <= 8) {
 
     printf("\n---------\n");
     runs++;
 
     /* (m,k) test */
     rtems_id selfid = rtems_task_self();
-    m_k mk = {.m = 4, .k = 4};
-    uint8_t ml = mk.m;
-    printf("\nT1: m = %i\n", ml );
+
+    uint8_t m = 11;
+    uint8_t k = 16;
 
     /* begin test fts_rtems_task_register */
-    uint8_t reg_status = fts_rtems_task_register(selfid, mk, curr_tech);
-    if (reg_status == 1)
+    if (runs == 1)
     {
-      printf("\nT1: Task_1 was registered!\n");
+      uint8_t reg_status = fts_rtems_task_register(selfid, m, k, curr_tech);
+      if (reg_status == 1)
+      {
+        printf("\nT1: Task_1 was registered!\n");
+      }
+      else
+      {
+        printf("\nT: Task_1 ALREADY registered!\n");
+      }
     }
-    else{
-      printf("\nT: Task_1 ALREADY registered!\n");
-    }
+
     /* end test fts_rtems_task_register */
 
     /* Test setting a pattern */
@@ -119,10 +124,12 @@ rtems_task Task_1(
           bitstring_pattern pattern = { .pattern_start = p_s, .pattern_end = p_e , .curr_pos = p_s, .bitpos = 0, .max_bitpos = 7};
 
           printf("\n***TEST.C***\n");
-          s_p(p_s, p_e, 7);
+          s_p(p_s, p_e, 7); // show pattern
           printf("\n***TEST.C***\n");
 
-          int8_t bm_status = fts_set_sre_pattern(selfid, pattern);
+          bitstring_pattern *p = &pattern;
+
+          int8_t bm_status = fts_set_sre_pattern(selfid, p);
           if (bm_status==1)
           {
               printf("\nT1: Pattern is stored.\n");

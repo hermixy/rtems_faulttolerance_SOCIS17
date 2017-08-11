@@ -53,11 +53,11 @@ typedef struct {
  * http://ls12-www.cs.tu-dortmund.de/daes/media/documents/publications/downloads/2016-khchen-lctes.pdf
  */
 typedef struct Static_Pattern {
-	uint8_t  	pattern_start;
-	uint8_t   pattern_end;
-	uint8_t	      *curr_pos;
+	uint8_t  	   *pattern_start;
+	uint8_t      *pattern_end;
+	uint8_t	     *curr_pos;
 	uint8_t 	    bitpos;
-  uint8_t  max_bitpos;
+  uint8_t       max_bitpos;
 } bitstring_pattern;
 
 /**
@@ -70,7 +70,8 @@ typedef struct Static_Pattern {
  */
 uint8_t fts_rtems_task_register(
   rtems_id id,
-  m_k mk,
+  uint8_t m,
+  uint8_t k,
   fts_tech tech
 );
 
@@ -134,5 +135,5 @@ uint8_t fts_change_tech(
  */
 int8_t fts_set_sre_pattern(
   rtems_id id,
-  bitstring_pattern bmap
+  bitstring_pattern *bmap
 );
