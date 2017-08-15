@@ -90,6 +90,9 @@ int8_t fts_set_sre_pattern(
 
     printf("\n(set_sre_pattern)\n");
     show_pattern(p_curr, p_end, 7);
+    printf("\nfts.c (set pattern): Address of first byte: %p\n", (void *)list.pattern[sre_index]->pattern_start);
+    printf("\nfts.c (set pattern): Address of current byte: %p\n", (void *)list.pattern[sre_index]->curr_pos);
+    printf("\nfts.c (set pattern): Address of last byte: %p\n", (void *)list.pattern[sre_index]->pattern_end);
 
     return 1;
 }
@@ -107,10 +110,13 @@ static fts_version sre_next_version(
     show_pattern(list.pattern[i]->pattern_start, list.pattern[i]->pattern_end, 7);
 
     uint8_t bitpos = list.pattern[i]->bitpos; // bit to be read
-    uint8_t c_byte = list.pattern[i]->curr_pos; // byte to be read
+    uint8_t c_byte = *(list.pattern[i]->curr_pos); // byte to be read
     uint8_t bit_mask_one = BIT_7 >> bitpos;
 
     uint8_t result_bit = c_byte & bit_mask_one;
+    printf("\nfts.c (sre next version): Address of first byte: %p\n", (void *)list.pattern[i]->pattern_start);
+    printf("\nfts.c (sre next version): Address of current byte: %p\n", (void *)list.pattern[i]->curr_pos);
+    printf("\nfts.c (sre next version): Address of last byte: %p\n", (void *)list.pattern[i]->pattern_end);
 
     if (list.pattern[i]->bitpos < 7)
     {

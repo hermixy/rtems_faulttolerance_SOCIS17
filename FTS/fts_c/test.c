@@ -18,7 +18,8 @@ uint8_t end_p = 0; // first byte of pattern
 uint8_t mid_p = 0; // second byte
 uint8_t begin_p = 0; //last byte
 
-uint8_t * const p_s = &begin_p; // address of first byte
+
+ uint8_t * const  p_s = &begin_p; // address of first byte
 //why can't I change the valie of *p_e when I do
 //uint8_t * const p_e  = p_s+1;
 uint8_t * const p_m  = &mid_p;
@@ -111,16 +112,16 @@ rtems_task Task_1(
     if (setpatt == 0) // only once
     {
         /* Print the addresses of pointers */
-        printf("\nT1: Address of p_s: %p\n", (void *)p_s);
-        printf("\nT1: Address of p_m: %p\n", (void *)p_m);
-        printf("\nT1: Address of p_e: %p\n", (void *)p_e);
-        uint8_t *p_curr = p_s;
+;
+
         /* TODO: Algorithm to set pattern  */
         //for (; p_curr <= p_e; p_curr++)
           //{
             uint8_t b_mask = 1;
-            uint8_t c_byte = *p_curr;
 
+            printf("\nT1: Address of p_s: %p\n", (void *)p_s);
+            printf("\nT1: Address of p_m: %p\n", (void *)p_m);
+            printf("\nT1: Address of p_e: %p\n", (void *)p_e);
             /*
             for (uint8_t i = 0; i < 8; i++)
             {
@@ -137,15 +138,18 @@ rtems_task Task_1(
               }
               *p_curr = *p_curr | c_byte;
               */
-              *p_s = 31;
-              *p_m = 0;
-              *p_e = 0;
+              *p_s = 0;
+              *p_m = 31;
+              *p_e = 255;
 
           //}
 
           /* Build pattern struct */
           bitstring_pattern pattern = { .pattern_start = p_s, .pattern_end = p_e , .curr_pos = p_s, .bitpos = 0, .max_bitpos = 7};
 
+          printf("\nT1: Address of p_s: %p\n", (void *)pattern.pattern_start);
+          printf("\nT1: Address of p_e: %p\n", (void *)pattern.pattern_end);
+          printf("\nT1: Address of current: %p\n", (void *)pattern.curr_pos);
           /* show pattern */
           s_p(p_s, p_e, 7);
 
