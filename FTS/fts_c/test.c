@@ -15,17 +15,17 @@
 /* Initiate 24 bit pattern */
 // bytes are initialized bottom to top
 uint8_t end_p = 0; // first byte of pattern
-uint8_t mid_p = 0; // second byte
+//uint8_t mid_p = 0; // second byte
 uint8_t begin_p = 0; //last byte
 
 
- uint8_t * const  p_s = &begin_p; // address of first byte
+ uint8_t * p_s = &begin_p; // address of first byte
 //why can't I change the valie of *p_e when I do
 //uint8_t * const p_e  = p_s+1;
-uint8_t * const p_m  = &mid_p;
-uint8_t * const p_e  = &end_p;
+//uint8_t * const p_m  = &mid_p;
+uint8_t * p_e  = &end_p;
 
-uint8_t maxruns = 48;
+uint8_t maxruns = 16;
 uint8_t setpatt = 0;
 fts_tech curr_tech = SRE;
 
@@ -92,7 +92,7 @@ rtems_task Task_1(
     rtems_id selfid = rtems_task_self();
 
     /* (m,k) test - set (m,k) */
-    uint8_t m = 11;
+    uint8_t m = 7;
     uint8_t k = 16;
 
     /* test fts_rtems_task_register */
@@ -118,47 +118,17 @@ rtems_task Task_1(
     if (setpatt == 0) // only once
     {
         /* Print the addresses of pointers */
-;
-
-        /* TODO: Algorithm to set pattern  */
-        //for (; p_curr <= p_e; p_curr++)
-          //{
             uint8_t b_mask = 1;
 
             printf("\nT1: Address of p_s: %p\n", (void *)p_s);
-            printf("\nT1: Address of p_m: %p\n", (void *)p_m);
+            //printf("\nT1: Address of p_m: %p\n", (void *)p_m);
             printf("\nT1: Address of p_e: %p\n", (void *)p_e);
-            /*
-            for (uint8_t i = 0; i < 8; i++)
-            {
 
-              if(i==2)
-              {
-                c_byte = b_mask & c_byte;
-              }
-              else
-              {
-                c_byte = b_mask | c_byte;
-              }
-              b_mask <<= 1;
-              }
-              *p_curr = *p_curr | c_byte;
-              */
-              *p_s = 0;
-              *p_m = 31;
-              *p_e = 255;
-
-          //}
-
+              //*p_s = 0;
+              //*p_m = 31;
+              //*p_e = 255;
           /* Build pattern struct */
           bitstring_pattern pattern = { .pattern_start = p_s, .pattern_end = p_e , .curr_pos = p_s, .bitpos = 0, .max_bitpos = 7};
-
-          printf("\nT1: Address of p_s: %p\n", (void *)pattern.pattern_start);
-          printf("\nT1: Address of p_e: %p\n", (void *)pattern.pattern_end);
-          printf("\nT1: Address of current: %p\n", (void *)pattern.curr_pos);
-          /* show pattern */
-          s_p(p_s, p_e, pattern.max_bitpos);
-
           bitstring_pattern *p = &pattern;
 
           /* Set pattern to the FTS */
@@ -167,6 +137,14 @@ rtems_task Task_1(
           {
               printf("\nT1: Pattern is stored.\n");
           }
+
+          int8_t pamt = create_pattern(selfid, R_PATTERN, p_s, p_e, 7);
+
+          printf("\nT1: Address of p_s: %p\n", (void *)pattern.pattern_start);
+          printf("\nT1: Address of p_e: %p\n", (void *)pattern.pattern_end);
+          printf("\nT1: Address of current: %p\n", (void *)pattern.curr_pos);
+          /* show pattern */
+          s_p(p_s, p_e, pattern.max_bitpos);
           setpatt = 1;
     }
 
@@ -193,6 +171,7 @@ rtems_task Task_1(
   if (runs == maxruns)
   {
     printf("\nT1: #B: %i, #R: %i\n", tsk_counter[0], tsk_counter[1]);
+    //rtems_task_delete( rtems_task_self() );
   }
 
   runs++; // only a few jobs

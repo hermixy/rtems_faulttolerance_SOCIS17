@@ -23,24 +23,12 @@ struct Task_ID_List {
 //   unsigned int corrects;
 // };
 
-
-// if task is in list already, return 1, -1 else
-int16_t task_in_list(
-  rtems_id id
-)
-{
-  for(int i = 0; i < list.task_list_index; i++)
-  {
-    if (list.task_list_id[i] == id)
-    {
-      return i;
-    }
-  }
-  return -1;
-}
-
 /* Show the execution pattern in the console */
-uint8_t show_pattern(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
+uint8_t show_pattern(
+  uint8_t *p_curr,
+  uint8_t *p_end,
+  uint8_t maxbit
+)
 {
   printf("\n\nfts.c: The pattern is:\n");
 
@@ -75,6 +63,86 @@ uint8_t show_pattern(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
   printf("\n\n");
   /* End output pattern */
   return 0;
+}
+
+/* */
+int16_t task_in_list(
+  rtems_id id
+)
+{
+  for (int i = 0; i < list.task_list_index; i++)
+  {
+    if (list.task_list_id[i] == id)
+    {
+      return i;
+    }
+  }
+  return -1;
+}
+// if task is in list already, return 1, -1 else
+
+int8_t create_pattern(
+  rtems_id id,
+  pattern_type pattern,
+  uint8_t *pattern_s,
+  uint8_t *pattern_e,
+  uint8_t bitpos_max
+)
+{
+  printf("\nfts.c (create_pattern): in 1\n");
+  /* end-start
+  * int nr_of_bytes = pattern_e - pattern_s;
+  * if (nr_of_bytes * 8 >= list.k[i])
+  * {
+  *   ;
+  * }
+  */
+  int16_t i = task_in_list(id);
+  list.pattern[i]->pattern_start = pattern_s;
+  list.pattern[i]->pattern_end = pattern_e;
+  list.pattern[i]->max_bitpos = bitpos_max;
+
+  printf("\nfts.c (create_pattern): m is %i, k is %i\n", list.m[i], list.k[i]);
+
+  uint8_t *pattern_it = pattern_s;
+  int8_t k_minus_m = list.k[i]-list.m[i];
+  uint8_t bitcount = 0;
+  uint8_t bitmask = BIT_7;
+
+  //how many bytes are needed to insert "0"s
+  uint zero_bytes = (k_minus_m)/8 + (k_minus_m % 8 != 0);
+
+  if (pattern == R_PATTERN )
+  {
+    /* insert "0"s */
+    while( zero_bytes >= 1  )
+    {
+      *pattern_it = 0;
+      if (zero_bytes > 1)
+      {
+        pattern_it++;
+      }
+      zero_bytes--;
+    }
+    uint8_t shift_r = (k_minus_m % 8);
+    uint8_t ones_8 = 255;
+    uint8_t sh_8 = ones_8 >> shift_r;
+    *pattern_it |= sh_8;
+    pattern_it++;
+    /* insert remaining "1"s */
+    for (;pattern_it <= pattern_e; pattern_it++)
+    {
+      *pattern_it  = ones_8;
+    }
+  }
+
+  if (pattern == E_PATTERN )
+  {
+    ;
+  }
+  printf("\nfts.c (create_pattern): ");
+  uint8_t sh = show_pattern(pattern_s, pattern_e, bitpos_max);
+  return 1;
 }
 
 // sets the sre execution pattern for a task

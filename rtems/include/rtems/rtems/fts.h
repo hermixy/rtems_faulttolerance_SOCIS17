@@ -26,6 +26,22 @@ typedef enum {
 } fts_tech;
 
 /**
+ * @brief (m,k)-pattern of a task
+ *
+ * If an R-pattern is used, the pattern first stores all "0"s and then the
+ * "1"s follow, such as in {0,0,0,1,1,1}.
+ * For E-patterns, the "1"s and "0"s are distributed evenly.
+ *
+ * For a more detailed description of R- and E-Pattern, refer to:
+ * http://ls12-www.cs.tu-dortmund.de/daes/media/documents/publications/downloads/2016-khchen-lctes.pdf
+ *
+ */
+typedef enum {
+  R_PATTERN,
+  E_PATTERN
+} pattern_type;
+
+/**
  * @brief (m,k) constaint of a task
  *
  * For a detailed description of (m,k) refer to:
@@ -36,13 +52,14 @@ typedef struct {
   uint8_t k;
 } m_k;
 
+
 /**
  * @brief Set static pattern for SRE
  *
  * This data structure is a bitmap which stores the execution pattern of a task.
  * If there is a "1" in the bitmap, the reliable version is executed, and if
  * there is a "0", the unreliable version is executed. The way of iteration is from
- * right to left and top to bottom.
+ * left to right and lower to higher memory address.
  * With pattern_start, the starting address of the bitmap is specified, and with
  * pattern_end, the ending address.
  * curr_pos stores the current position in the bitmap, and bitpos the current position
@@ -53,11 +70,11 @@ typedef struct {
  * http://ls12-www.cs.tu-dortmund.de/daes/media/documents/publications/downloads/2016-khchen-lctes.pdf
  */
 typedef struct Static_Pattern {
-	uint8_t * const  	   pattern_start;
-	uint8_t * const      pattern_end;
-	uint8_t	     *curr_pos;
-	uint8_t 	    bitpos;
-  uint8_t const      max_bitpos;
+	uint8_t   	  *pattern_start;
+	uint8_t       *pattern_end;
+	uint8_t	            *curr_pos;
+	uint8_t 	           bitpos;
+  uint8_t        max_bitpos;
 } bitstring_pattern;
 
 /**
