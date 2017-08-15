@@ -57,7 +57,7 @@ typedef struct Static_Pattern {
 	uint8_t * const      pattern_end;
 	uint8_t	     *curr_pos;
 	uint8_t 	    bitpos;
-  uint8_t       max_bitpos;
+  uint8_t const      max_bitpos;
 } bitstring_pattern;
 
 /**

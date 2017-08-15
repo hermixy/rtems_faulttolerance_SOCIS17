@@ -62,6 +62,11 @@ uint8_t show_pattern(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
         {
           printf("1");
         }
+
+        if (p_curr == p_end && i == maxbit)
+        {
+          i = 10;
+        }
         b_mask >>= 1;
     }
     printf("\n");
@@ -83,13 +88,13 @@ int8_t fts_set_sre_pattern(
   //{
     list.pattern[sre_index] = p;
 
-    show_pattern(p->pattern_start, p->pattern_end, 7);
+    show_pattern(p->pattern_start, p->pattern_end, p->max_bitpos);
 
     uint8_t *p_curr = list.pattern[sre_index]->pattern_start;
     uint8_t *p_end = list.pattern[sre_index]->pattern_end;
 
     printf("\n(set_sre_pattern)\n");
-    show_pattern(p_curr, p_end, 7);
+    show_pattern(p_curr, p_end, list.pattern[sre_index]->max_bitpos);
     printf("\nfts.c (set pattern): Address of first byte: %p\n", (void *)list.pattern[sre_index]->pattern_start);
     printf("\nfts.c (set pattern): Address of current byte: %p\n", (void *)list.pattern[sre_index]->curr_pos);
     printf("\nfts.c (set pattern): Address of last byte: %p\n", (void *)list.pattern[sre_index]->pattern_end);
@@ -107,7 +112,7 @@ static fts_version sre_next_version(
     printf("\nfts.c (sre_next_version):\n");
 
     printf("\nIn sre_next_version:");
-    show_pattern(list.pattern[i]->pattern_start, list.pattern[i]->pattern_end, 7);
+    show_pattern(list.pattern[i]->pattern_start, list.pattern[i]->pattern_end, list.pattern[i]->max_bitpos);
 
     uint8_t bitpos = list.pattern[i]->bitpos; // bit to be read
     uint8_t c_byte = *(list.pattern[i]->curr_pos); // byte to be read
@@ -118,23 +123,35 @@ static fts_version sre_next_version(
     printf("\nfts.c (sre next version): Address of current byte: %p\n", (void *)list.pattern[i]->curr_pos);
     printf("\nfts.c (sre next version): Address of last byte: %p\n", (void *)list.pattern[i]->pattern_end);
 
-    if (list.pattern[i]->bitpos < 7)
+    //if in last byte
+    if (list.pattern[i]->pattern_end == list.pattern[i]->curr_pos)
     {
-      list.pattern[i]->bitpos++;
-    }
-    else
-    {
-      if (list.pattern[i]->pattern_end == c_byte)
+      if (list.pattern[i]->bitpos < list.pattern[i]->max_bitpos)
+      {
+        list.pattern[i]->bitpos++;
+      }
+      else
       {
         list.pattern[i]->bitpos = 0;
         list.pattern[i]->curr_pos = list.pattern[i]->pattern_start;
       }
+    }
+    else
+    {
+      if ( list.pattern[i]->bitpos < 7 )
+      {
+        list.pattern[i]->bitpos++;
+      }
       else
       {
-      list.pattern[i]->bitpos = 0;
-      list.pattern[i]->curr_pos++;
+        list.pattern[i]->bitpos = 0;
+        list.pattern[i]->curr_pos++;
       }
     }
+
+
+
+    //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
 
     if (result_bit == 0)
     {

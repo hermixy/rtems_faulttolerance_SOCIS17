@@ -25,7 +25,7 @@ uint8_t begin_p = 0; //last byte
 uint8_t * const p_m  = &mid_p;
 uint8_t * const p_e  = &end_p;
 
-
+uint8_t maxruns = 48;
 uint8_t setpatt = 0;
 fts_tech curr_tech = SRE;
 
@@ -62,6 +62,12 @@ uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
         {
           printf("1");
         }
+
+        if (p_curr == p_end && i == maxbit)
+        {
+          i = 10;
+        }
+
         b_mask >>= 1;
     }
     printf("\n");
@@ -76,7 +82,7 @@ rtems_task Task_1(
 {
   static uint32_t tsk_counter[] = { 0, 0 }; //basic, recovery
   static uint8_t runs = 1;
-  while (runs <= 24) {
+  while (runs <= maxruns) {
 
 
     printf("\n------------------------\n");
@@ -151,7 +157,7 @@ rtems_task Task_1(
           printf("\nT1: Address of p_e: %p\n", (void *)pattern.pattern_end);
           printf("\nT1: Address of current: %p\n", (void *)pattern.curr_pos);
           /* show pattern */
-          s_p(p_s, p_e, 7);
+          s_p(p_s, p_e, pattern.max_bitpos);
 
           bitstring_pattern *p = &pattern;
 
@@ -184,7 +190,7 @@ rtems_task Task_1(
     }
     printf("\nT1: nr of jobs: %i\n", runs);
 
-  if (runs == 24)
+  if (runs == maxruns)
   {
     printf("\nT1: #B: %i, #R: %i\n", tsk_counter[0], tsk_counter[1]);
   }
