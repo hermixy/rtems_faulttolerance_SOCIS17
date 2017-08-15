@@ -106,16 +106,14 @@ int8_t create_pattern(
 
   uint8_t *pattern_it = pattern_s;
   int8_t k_minus_m = list.k[i]-list.m[i];
-  uint8_t bitcount = 0;
-  uint8_t bitmask = BIT_7;
 
-  //how many bytes are needed to insert "0"s
+  //number of bytes are needed to insert "0"s
   uint zero_bytes = (k_minus_m)/8 + (k_minus_m % 8 != 0);
 
-  if (pattern == R_PATTERN )
+  if ( pattern == R_PATTERN )
   {
     /* insert "0"s */
-    while( zero_bytes >= 1  )
+    while( zero_bytes >= 1 )
     {
       *pattern_it = 0;
       if (zero_bytes > 1)
@@ -124,6 +122,7 @@ int8_t create_pattern(
       }
       zero_bytes--;
     }
+
     uint8_t shift_r = (k_minus_m % 8);
     uint8_t ones_8 = 255;
     uint8_t sh_8 = ones_8 >> shift_r;
@@ -135,9 +134,18 @@ int8_t create_pattern(
       *pattern_it  = ones_8;
     }
   }
-
-  if (pattern == E_PATTERN )
+  /* evenly distributed "1"s */
+  if ( pattern == E_PATTERN )
   {
+    for ( int j = 0; j < list.k[i]; j++ )
+    {
+      int raman = ( (((j*list.m[i])/list.k[i]) + ((j*list.m[i])%list.k[i] != 0) )* list.k[i]/list.m[i] );
+      if (j == raman)
+      {
+        // insert 0;
+        ;
+      }
+    }
     ;
   }
   printf("\nfts.c (create_pattern): ");
