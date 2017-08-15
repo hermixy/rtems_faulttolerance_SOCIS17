@@ -11,20 +11,6 @@
 
 #define MAX_IT
 
-uint8_t setpatt = 0;
-fts_tech curr_tech = SRE;
-
-uint16_t counts = 0;
-
-static const uint32_t Periods[] = { 1000, 200 };
-static const rtems_name Task_name[] = {
-  rtems_build_name( 'T', 'A', '1', ' ' ),
-  rtems_build_name( 'T', 'A', '2', ' ' )
-};
-
-static const rtems_task_priority Prio[3] = { 2, 5 };
-static uint32_t tsk_counter[] = { 0, 0 }; //basic, recovery
-static rtems_id   Task_id[ 2 ];
 
 /* Initiate 24 bit pattern */
 // bytes are initialized bottom to top
@@ -37,6 +23,20 @@ uint8_t * const p_s = &begin_p; // address of first byte
 //uint8_t * const p_e  = p_s+1;
 uint8_t * const p_m  = &mid_p;
 uint8_t * const p_e  = &end_p;
+
+
+uint8_t setpatt = 0;
+fts_tech curr_tech = SRE;
+
+static const uint32_t Periods[] = { 1000, 200 };
+static const rtems_name Task_name[] = {
+  rtems_build_name( 'T', 'A', '1', ' ' ),
+  rtems_build_name( 'T', 'A', '2', ' ' )
+};
+
+static const rtems_task_priority Prio[3] = { 2, 5 };
+static rtems_id   Task_id[ 2 ];
+
 
 /* Show pattern */
 uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
@@ -73,11 +73,14 @@ rtems_task Task_1(
   rtems_task_argument unused
 )
 {
-  uint8_t runs = 0;
+  static uint32_t tsk_counter[] = { 0, 0 }; //basic, recovery
+  static uint8_t runs = 1;
   while (runs <= 24) {
 
-    printf("\n---------\n");
-    runs++; // only a few jobs
+
+    printf("\n------------------------\n");
+    printf("\nTask 1 starts!\n");
+
 
     rtems_id selfid = rtems_task_self();
 
@@ -134,9 +137,9 @@ rtems_task Task_1(
               }
               *p_curr = *p_curr | c_byte;
               */
-              *p_s = 248;
-              *p_m = 3;
-              *p_e = 4;
+              *p_s = 31;
+              *p_m = 0;
+              *p_e = 0;
 
           //}
 
@@ -175,14 +178,15 @@ rtems_task Task_1(
         tsk_counter[0]++;
         break;
     }
-    counts++;
-    printf("\nT1: nr of jobs: %i\n", counts);
+    printf("\nT1: nr of jobs: %i\n", runs);
 
-  if (counts == 24)
+  if (runs == 24)
   {
     printf("\nT1: #B: %i, #R: %i\n", tsk_counter[0], tsk_counter[1]);
   }
 
+  runs++; // only a few jobs
+  printf("\nTask 1 ends!\n");
 }
 
 };

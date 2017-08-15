@@ -15,6 +15,8 @@ struct Task_ID_List {
   uint16_t task_list_index; //always is one position ahead of last filled
 } list;
 
+
+
 // typedef struct task_info {
 //   unsigned int executions;
 //   unsigned int detects;
@@ -207,6 +209,12 @@ fts_version fts_get_mode(
         break;
 
       case SRE :
+        /*
+        ;
+        char *ptr = (char *)0x0200724C;
+        ;
+        printf("fts.c (get_mode): Problematic address at: %p, value is: %i \n",ptr, *ptr);
+        ; */
         next_version = sre_next_version(task_index);
         printf("\nfts.c (get_mode): SRE\n");
         break;

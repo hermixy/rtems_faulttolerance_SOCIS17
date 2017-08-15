@@ -53,8 +53,8 @@ typedef struct {
  * http://ls12-www.cs.tu-dortmund.de/daes/media/documents/publications/downloads/2016-khchen-lctes.pdf
  */
 typedef struct Static_Pattern {
-	uint8_t  	   *pattern_start;
-	uint8_t      *pattern_end;
+	uint8_t * const  	   pattern_start;
+	uint8_t * const      pattern_end;
 	uint8_t	     *curr_pos;
 	uint8_t 	    bitpos;
   uint8_t       max_bitpos;
