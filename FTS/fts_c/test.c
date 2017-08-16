@@ -92,7 +92,7 @@ rtems_task Task_1(
     rtems_id selfid = rtems_task_self();
 
     /* (m,k) test - set (m,k) */
-    uint8_t m = 4;
+    uint8_t m = 12;
     uint8_t k = 16;
 
     /* test fts_rtems_task_register */
