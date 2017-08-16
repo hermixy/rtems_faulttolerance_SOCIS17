@@ -105,7 +105,10 @@ int8_t create_pattern(
   printf("\nfts.c (create_pattern): m is %i, k is %i\n", list.m[i], list.k[i]);
 
   uint8_t *pattern_it = pattern_s;
-
+  /*
+  * for details on E and R pattern, check
+  * http://ieeexplore.ieee.org/document/1661621/
+  */
   if ( pattern == R_PATTERN )
   {
     int8_t k_minus_m = list.k[i]-list.m[i];
@@ -134,7 +137,10 @@ int8_t create_pattern(
       *pattern_it  = ones_8;
     }
   }
-  /* evenly distributed "1"s */
+  /* evenly distributed "1"s
+   * for details on E and R pattern, check
+   * http://ieeexplore.ieee.org/document/1661621/
+   */
 
   if ( pattern == E_PATTERN )
   {
@@ -156,7 +162,6 @@ int8_t create_pattern(
         {
           // insert 1;
           set_byte |= bitmask;
-          // first bit is 0
         }
         bitmask >>= 1;
         j++;
