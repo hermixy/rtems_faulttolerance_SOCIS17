@@ -92,7 +92,7 @@ rtems_task Task_1(
     rtems_id selfid = rtems_task_self();
 
     /* (m,k) test - set (m,k) */
-    uint8_t m = 7;
+    uint8_t m = 4;
     uint8_t k = 16;
 
     /* test fts_rtems_task_register */
@@ -138,7 +138,7 @@ rtems_task Task_1(
               printf("\nT1: Pattern is stored.\n");
           }
 
-          int8_t pamt = create_pattern(selfid, R_PATTERN, p_s, p_e, 7);
+          int8_t pamt = create_pattern(selfid, E_PATTERN, p_s, p_e, 7);
 
           printf("\nT1: Address of p_s: %p\n", (void *)pattern.pattern_start);
           printf("\nT1: Address of p_e: %p\n", (void *)pattern.pattern_end);
