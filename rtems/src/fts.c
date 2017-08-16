@@ -142,17 +142,21 @@ int8_t create_pattern(
     //for ( int j = 0; j < list.k[i]; j++ )
     //{
     int j = 0;
-    for (;(pattern_it <= pattern_e) && (j < list.k[i]); pattern_it++)
+    for (;(pattern_it <= pattern_e); pattern_it++)
     {
       uint8_t bitmask = BIT_7;
-      for (uint8_t it_bits = 0; (it_bits < 8) && (j < list.k[i]) ; it_bits++)
+      for (uint8_t it_bits = 0; (it_bits < 8) ; it_bits++)
       {
-        int raman = ( (((j*list.m[i])/list.k[i]) + ((j*list.m[i])%list.k[i] != 0) )* list.k[i]/list.m[i] );
+        int raman = ( (((j*(list.k[i]-list.m[i]))/list.k[i]) + ((j*(list.k[i]-list.m[i]))%list.k[i] != 0) )* list.k[i]/(list.k[i]-list.m[i]) );
 
-        if (j == raman)
+        // 'normal' e-pattern
+        //int raman = ( (((j*list.m[i])/list.k[i]) + ((j*list.m[i])%list.k[i] != 0) )* list.k[i]/list.m[i] );
+
+        if (j != raman)
         {
-            // insert 1;
-            set_byte |= bitmask;
+          // insert 1;
+          set_byte |= bitmask;
+          // first bit is 0
         }
         bitmask >>= 1;
         j++;
