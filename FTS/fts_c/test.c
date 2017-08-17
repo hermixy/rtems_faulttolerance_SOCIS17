@@ -25,9 +25,9 @@ uint8_t begin_p = 0; //last byte
 //uint8_t * const p_m  = &mid_p;
 uint8_t * p_e  = &end_p;
 
-uint8_t fault_rate = 100; //percent*10; fault per task
-uint8_t fault = 0;
-uint8_t maxruns = 16;
+uint8_t fault_rate = 10; //percent*10; fault per task
+uint32_t faults_T1 = 0;
+uint32_t maxruns = 16;
 uint8_t setpatt = 0;
 fts_tech curr_tech = SRE;
 
@@ -43,16 +43,21 @@ static rtems_id   Task_id[ 2 ];
 /* initialize seeds for rng */
 uint8_t seed = 2;
 
-fault_status fault_injection(uint8_t idk)
+fault_status fault_injection(void)
 {
   /*generate a random number and return fault status 32767*/
-  int random = rand() / (RAND_MAX / (1000 + 1) + 1);
+  int random = rand() / (RAND_MAX / (100 + 1) + 1);
   printf("\nT1: Random NR is %i\n", random);
-  if ( fault_rate < random )
+
+  if ( random <= fault_rate )
+  {
+    faults_T1++;
+    return FAULT;
+  }
+  else
   {
     return NO_FAULT;
   }
-  return FAULT;
 }
 
 error_status detect_error(uint8_t idk)
@@ -170,11 +175,17 @@ rtems_task Task_1(
     }
 
     /*Inject fault*/
-    fault_status fs_T1 = fault_injection(0);
+    fault_status fs_T1 = fault_injection();
 
-    if(fs_T1 == FAULT)
+    switch(fs_T1)
     {
-      printf("\n***T1: A fault occurred!***\n");
+      case FAULT :
+        printf("\n***T1: A fault occurred!***\n");
+        break;
+
+      case NO_FAULT :
+        printf("\nT1: No fault\n");
+        break;
     }
 
     /* Get execution mode for this task instance */
@@ -201,10 +212,8 @@ rtems_task Task_1(
         break;
     }
     printf("\nT1: nr of jobs: %i\n", runs);
-
-
-
-
+    printf("\nT1: nr of faults: %i\n", faults_T1 );
+    printf("\nT1: fault rate: %i%%\n", fault_rate );
 
   if (runs == maxruns)
   {
