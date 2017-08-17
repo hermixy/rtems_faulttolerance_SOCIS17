@@ -16,7 +16,6 @@ struct Task_ID_List {
 } list;
 
 
-
 // typedef struct task_info {
 //   unsigned int executions;
 //   unsigned int detects;
@@ -175,41 +174,45 @@ int8_t create_pattern(
   return 1;
 }
 
-// sets the sre execution pattern for a task
-int8_t fts_set_sre_pattern(
+// sets the static execution pattern for a task
+int8_t fts_set_static_pattern(
   rtems_id id,
   bitstring_pattern *p
 )
 {
-    int sre_index = task_in_list(id);
-  //if( (sre_index != -1) && list.task_list_tech[sre_index] == SRE )
+    int static_index = task_in_list(id);
+  //if( (static_index != -1) && list.task_list_tech[static_index] == static )
   //{
-    list.pattern[sre_index] = p;
+    list.pattern[static_index] = p;
 
     show_pattern(p->pattern_start, p->pattern_end, p->max_bitpos);
 
-    uint8_t *p_curr = list.pattern[sre_index]->pattern_start;
-    uint8_t *p_end = list.pattern[sre_index]->pattern_end;
+    uint8_t *p_curr = list.pattern[static_index]->pattern_start;
+    uint8_t *p_end = list.pattern[static_index]->pattern_end;
 
-    printf("\n(set_sre_pattern)\n");
-    show_pattern(p_curr, p_end, list.pattern[sre_index]->max_bitpos);
-    printf("\nfts.c (set pattern): Address of first byte: %p\n", (void *)list.pattern[sre_index]->pattern_start);
-    printf("\nfts.c (set pattern): Address of current byte: %p\n", (void *)list.pattern[sre_index]->curr_pos);
-    printf("\nfts.c (set pattern): Address of last byte: %p\n", (void *)list.pattern[sre_index]->pattern_end);
+    printf("\n(set_static_pattern)\n");
+    show_pattern(p_curr, p_end, list.pattern[static_index]->max_bitpos);
+    printf("\nfts.c (set pattern): Address of first byte: %p\n", (void *)list.pattern[static_index]->pattern_start);
+    printf("\nfts.c (set pattern): Address of current byte: %p\n", (void *)list.pattern[static_index]->curr_pos);
+    printf("\nfts.c (set pattern): Address of last byte: %p\n", (void *)list.pattern[static_index]->pattern_end);
 
     return 1;
 }
 
 ////
 
-static fts_version sre_next_version(
+static fts_version static_next_version(
   int i
 )
 {
-    printf("\nfts.c (sre_next_version):  index is %i\n", i);
-    printf("\nfts.c (sre_next_version):\n");
 
-    printf("\nIn sre_next_version:");
+    printf("\nfts.c (static next version): Address of first byte: %p\n", (void *)list.pattern[i]->pattern_start);
+    printf("\nfts.c (static next version): Address of current byte: %p\n", (void *)list.pattern[i]->curr_pos);
+    printf("\nfts.c (static next version): Address of last byte: %p\n", (void *)list.pattern[i]->pattern_end);
+
+    printf("\nfts.c (static_next_version):  index is %i\n", i);
+    printf("\nIn static_next_version:");
+
     show_pattern(list.pattern[i]->pattern_start, list.pattern[i]->pattern_end, list.pattern[i]->max_bitpos);
 
     uint8_t bitpos = list.pattern[i]->bitpos; // bit to be read
@@ -217,9 +220,6 @@ static fts_version sre_next_version(
     uint8_t bit_mask_one = BIT_7 >> bitpos;
 
     uint8_t result_bit = c_byte & bit_mask_one;
-    printf("\nfts.c (sre next version): Address of first byte: %p\n", (void *)list.pattern[i]->pattern_start);
-    printf("\nfts.c (sre next version): Address of current byte: %p\n", (void *)list.pattern[i]->curr_pos);
-    printf("\nfts.c (sre next version): Address of last byte: %p\n", (void *)list.pattern[i]->pattern_end);
 
     //if in last byte
     if (list.pattern[i]->pattern_end == list.pattern[i]->curr_pos)
@@ -247,15 +247,29 @@ static fts_version sre_next_version(
       }
     }
 
+    fts_tech tech = list.task_list_tech[i];
 
-
-    //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
-
-    if (result_bit == 0)
+    if (tech == SRE)
     {
-      return BASIC;
+      if (result_bit == 0)
+      {
+        printf("\nfts.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+        return BASIC;
+      }
+      printf("\nfts.c (static_next_version):SRE RECOVERY, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+      return RECOVERY;
     }
-    return RECOVERY;
+    else //SDR
+    {
+      if (result_bit == 0)
+      {
+        printf("\nfts.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+        return BASIC;
+      }
+      printf("\nfts.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+      return DETECTION;
+    }
+    //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
 }
 
 /***/
@@ -336,12 +350,12 @@ fts_version fts_get_mode(
         ;
         printf("fts.c (get_mode): Problematic address at: %p, value is: %i \n",ptr, *ptr);
         ; */
-        next_version = sre_next_version(task_index);
+        next_version = static_next_version(task_index);
         printf("\nfts.c (get_mode): SRE\n");
         break;
 
       case SDR :
-        next_version = RECOVERY;
+        next_version = static_next_version(task_index);
         printf("\nfts.c (get_mode): SDR\n");
         break;
 

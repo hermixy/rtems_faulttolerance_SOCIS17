@@ -25,11 +25,11 @@ uint8_t begin_p = 0; //last byte
 //uint8_t * const p_m  = &mid_p;
 uint8_t * p_e  = &end_p;
 
-uint8_t fault_rate = 10; //percent*10; fault per task
+uint8_t fault_rate = 50; //percent*10; fault per task
 uint32_t faults_T1 = 0;
-uint32_t maxruns = 16;
+uint32_t maxruns = 150;
 uint8_t setpatt = 0;
-fts_tech curr_tech = SRE;
+fts_tech curr_tech = SDR;
 
 static const uint32_t Periods[] = { 1000, 200 };
 static const rtems_name Task_name[] = {
@@ -39,12 +39,54 @@ static const rtems_name Task_name[] = {
 
 static const rtems_task_priority Prio[3] = { 2, 5 };
 static rtems_id   Task_id[ 2 ];
+static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
 
 /* initialize seeds for rng */
-uint8_t seed = 2;
+uint8_t seed = 5;
 
+/* basic task block, not protected */
+void basic_version(void)
+{
+  /* only protect from faults that would affect the remaining system */
+  printf("\nExecuting reliable version\n");
+  tsk_counter[0]++;
+  return 0;
+}
+
+/* detection task block, error detection activated */
+error_status detection_version(fault_status f_s)
+{
+  printf("\nExecuting detection version\n");
+  switch(f_s)
+  {
+    case FAULT :
+      printf("\n***An error!***\n");
+      recovery_version();
+      break;
+
+    case NO_FAULT :
+      printf("\nNo error\n");
+      break;
+  }
+  tsk_counter[1]++;
+  return 0;
+}
+
+/* recovery task block, error correction activated */
+void recovery_version(void)
+{
+  printf("\nExecuting reliable version\n");
+  tsk_counter[2]++;
+  return 0;
+}
+
+/* fault injection function */
 fault_status fault_injection(void)
 {
+  if(fault_rate == 0)
+  {
+    return NO_FAULT;
+  }
   /*generate a random number and return fault status 32767*/
   int random = rand() / (RAND_MAX / (100 + 1) + 1);
   printf("\nT1: Random NR is %i\n", random);
@@ -60,15 +102,13 @@ fault_status fault_injection(void)
   }
 }
 
-error_status detect_error(uint8_t idk)
-{
+
   //there is a fault
 
   // an error was detected, ask fts what should be done about it
   // what's in the pattern ?
   //
-  return 1;
-}
+
 /* Show pattern */
 uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
 {
@@ -110,8 +150,7 @@ rtems_task Task_1(
   rtems_task_argument unused
 )
 {
-  static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
-  static uint8_t runs = 1;
+  static uint32_t runs = 1;
   while (runs <= maxruns) {
 
 
@@ -158,7 +197,7 @@ rtems_task Task_1(
           bitstring_pattern *p = &pattern;
 
           /* Set pattern to the FTS */
-          int8_t bm_status = fts_set_sre_pattern(selfid, p);
+          int8_t bm_status = fts_set_static_pattern(selfid, p);
           if (bm_status==1)
           {
               printf("\nT1: Pattern is stored.\n");
@@ -194,21 +233,20 @@ rtems_task Task_1(
     {
       case BASIC :
         printf("\nT1: BASIC\n");
-          /* Execute basic task version here */
-        tsk_counter[0]++;
+        /* Execute basic task version here */
+        basic_version();
         break;
 
       case DETECTION :
         printf("\nT1: DETECTION\n");
         /* Execute detection task version here */
-        error_status f_s = detect_error(1);
-        tsk_counter[1]++;
+        error_status e_s = detection_version(fs_T1);
         break;
 
       case RECOVERY :
         printf("\nT1: RECOVERY\n");
         /* Execute recovery task version here */
-        tsk_counter[2]++;
+        recovery_version();
         break;
     }
     printf("\nT1: nr of jobs: %i\n", runs);
