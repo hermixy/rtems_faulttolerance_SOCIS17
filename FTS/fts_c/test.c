@@ -25,6 +25,8 @@ uint8_t begin_p = 0; //last byte
 //uint8_t * const p_m  = &mid_p;
 uint8_t * p_e  = &end_p;
 
+uint8_t fault_rate = 100; //percent*10; fault per task
+uint8_t fault = 0;
 uint8_t maxruns = 16;
 uint8_t setpatt = 0;
 fts_tech curr_tech = SRE;
@@ -38,7 +40,30 @@ static const rtems_name Task_name[] = {
 static const rtems_task_priority Prio[3] = { 2, 5 };
 static rtems_id   Task_id[ 2 ];
 
+/* initialize seeds for rng */
+uint8_t seed = 2;
 
+fault_status fault_injection(uint8_t idk)
+{
+  /*generate a random number and return fault status 32767*/
+  int random = rand() / (RAND_MAX / (1000 + 1) + 1);
+  printf("\nT1: Random NR is %i\n", random);
+  if ( fault_rate < random )
+  {
+    return NO_FAULT;
+  }
+  return FAULT;
+}
+
+error_status detect_error(uint8_t idk)
+{
+  //there is a fault
+
+  // an error was detected, ask fts what should be done about it
+  // what's in the pattern ?
+  //
+  return 1;
+}
 /* Show pattern */
 uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
 {
@@ -80,7 +105,7 @@ rtems_task Task_1(
   rtems_task_argument unused
 )
 {
-  static uint32_t tsk_counter[] = { 0, 0 }; //basic, recovery
+  static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
   static uint8_t runs = 1;
   while (runs <= maxruns) {
 
@@ -109,10 +134,6 @@ rtems_task Task_1(
         printf("\nT: Task_1 already registered!\n");
       }
     }
-
-    /* Test setting a pattern */
-
-
 
     /* Pattern initialization and registration */
     if (setpatt == 0) // only once
@@ -148,29 +169,46 @@ rtems_task Task_1(
           setpatt = 1;
     }
 
+    /*Inject fault*/
+    fault_status fs_T1 = fault_injection(0);
+
+    if(fs_T1 == FAULT)
+    {
+      printf("\n***T1: A fault occurred!***\n");
+    }
+
     /* Get execution mode for this task instance */
     fts_version next_mode = fts_get_mode(selfid);
     switch(next_mode)
     {
-      case RECOVERY :
-        printf("\nT1: RECOVERY\n");
-        tsk_counter[1]++;
+      case BASIC :
+        printf("\nT1: BASIC\n");
+          /* Execute basic task version here */
+        tsk_counter[0]++;
         break;
 
       case DETECTION :
         printf("\nT1: DETECTION\n");
+        /* Execute detection task version here */
+        error_status f_s = detect_error(1);
+        tsk_counter[1]++;
         break;
 
-      case BASIC :
-        printf("\nT1: BASIC\n");
-        tsk_counter[0]++;
+      case RECOVERY :
+        printf("\nT1: RECOVERY\n");
+        /* Execute recovery task version here */
+        tsk_counter[2]++;
         break;
     }
     printf("\nT1: nr of jobs: %i\n", runs);
 
+
+
+
+
   if (runs == maxruns)
   {
-    printf("\nT1: #B: %i, #R: %i\n", tsk_counter[0], tsk_counter[1]);
+    printf("\nT1: #B: %i, #D: %i, #R: %i\n", tsk_counter[0], tsk_counter[1], tsk_counter[2]);
     //rtems_task_delete( rtems_task_self() );
   }
 
@@ -213,6 +251,9 @@ rtems_task Init(
   i = fts_init_versions();
   printf( "\nInit: **FTS TEST**\n" );
   printf("\nInit: %d\n",i);
+
+  srand(seed);
+
   rtems_task_delete( rtems_task_self() );
 
 }

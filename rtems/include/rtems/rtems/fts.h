@@ -42,6 +42,30 @@ typedef enum {
 } pattern_type;
 
 /**
+ * @brief status of existance of a fault
+ *
+ * If a fault was detected, the status is set to FAULT, and NO_FAULT when
+ * no fault was detected.
+ *
+ */
+typedef enum {
+  FAULT,
+  NO_FAULT
+} fault_status;
+
+/**
+ * @brief status of existance of an error
+ *
+ * If an error was detected, the status is set to ERROR, and NO_ERROR when
+ * no error was detected.
+ *
+ */
+typedef enum {
+  ERROR,
+  NO_ERROR
+} error_status;
+
+/**
  * @brief (m,k) constaint of a task
  *
  * For a detailed description of (m,k) refer to:
