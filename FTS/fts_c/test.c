@@ -164,6 +164,14 @@ rtems_task Task_1(
     uint8_t m = 12;
     uint8_t k = 16;
 
+    void (*b_pointer)(void) = &detection_version;
+    error_status (*d_pointer)(fault_status) = &detection_version;
+    void (*r_pointer)(void) = &recovery_version;
+
+    //create struct of all task versions
+    //pass it to the FTS
+    task_versions versions_T1 = {.basic_pointer = b_pointer, .detection_pointer = d_pointer, .recovery_pointer = r_pointer };
+    task_versions *vers = &versions_T1;
     /* test fts_rtems_task_register */
     if (runs == 1) //only first run
     {

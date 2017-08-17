@@ -12,6 +12,7 @@ struct Task_ID_List {
   uint8_t k[P_TASKS];
   fts_tech task_list_tech[P_TASKS];
   bitstring_pattern *pattern[P_TASKS];
+  task_versions versions[P_TASKS];
   uint16_t task_list_index; //always is one position ahead of last filled
 } list;
 

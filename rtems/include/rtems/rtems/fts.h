@@ -102,6 +102,18 @@ typedef struct Static_Pattern {
 } bitstring_pattern;
 
 /**
+ * @brief Pointers to the corresponding task versions
+ *
+ * For a detailed description of the task versions refer to:
+ * http://ls12-www.cs.tu-dortmund.de/daes/media/documents/publications/downloads/2016-khchen-lctes.pdf
+ */
+typedef struct Task_Versions {
+  void (*basic_pointer)(void);
+  error_status (*detection_pointer)(fault_status);
+  void (*recovery_pointer)(void);
+} task_versions;
+
+/**
  * @brief Register task for protection
  *
  * From the next activation on, the task with the given id will be protected,
