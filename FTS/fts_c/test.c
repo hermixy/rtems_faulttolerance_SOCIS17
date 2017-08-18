@@ -25,9 +25,14 @@ uint8_t begin_p = 0; //last byte
 //uint8_t * const p_m  = &mid_p;
 uint8_t * p_e  = &end_p;
 
-uint8_t fault_rate = 50; //percent*10; fault per task
+//declare function pointers
+void (*b_pointer)(void);
+error_status (*d_pointer)(fault_status);
+void (*r_pointer)(void);
+
+uint8_t fault_rate = 20; //percent*10; fault per task
 uint32_t faults_T1 = 0;
-uint32_t maxruns = 150;
+uint32_t maxruns = 16;
 uint8_t setpatt = 0;
 fts_tech curr_tech = SDR;
 
@@ -164,17 +169,21 @@ rtems_task Task_1(
     uint8_t m = 12;
     uint8_t k = 16;
 
-    void (*b_pointer)(void) = &detection_version;
-    error_status (*d_pointer)(fault_status) = &detection_version;
-    void (*r_pointer)(void) = &recovery_version;
-
-    //create struct of all task versions
-    //pass it to the FTS
-    task_versions versions_T1 = {.basic_pointer = b_pointer, .detection_pointer = d_pointer, .recovery_pointer = r_pointer };
-    task_versions *vers = &versions_T1;
     /* test fts_rtems_task_register */
     if (runs == 1) //only first run
     {
+      /* get addresses of functions */
+      b_pointer = &basic_version;
+      d_pointer = &detection_version;
+      r_pointer = &recovery_version;
+
+      printf("\nT1: Adresses of functions:\nB: %p\nD: %p\nR: %p\n",(void *)b_pointer, (void *)d_pointer, (void *)r_pointer);
+
+      //create struct of all task versions
+      //pass it to the FTS
+      // task_versions versions_T1 = {.basic_pointer = b_pointer, .detection_pointer = d_pointer, .recovery_pointer = r_pointer };
+      // task_versions *vers = &versions_T1;
+
       /* Register Task to FTS */
       uint8_t reg_status = fts_rtems_task_register(selfid, m, k, curr_tech);
       if (reg_status == 1)
@@ -218,6 +227,7 @@ rtems_task Task_1(
           printf("\nT1: Address of current: %p\n", (void *)pattern.curr_pos);
           /* show pattern */
           s_p(p_s, p_e, pattern.max_bitpos);
+
           setpatt = 1;
     }
 

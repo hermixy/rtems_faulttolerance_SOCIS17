@@ -12,7 +12,7 @@ struct Task_ID_List {
   uint8_t k[P_TASKS];
   fts_tech task_list_tech[P_TASKS];
   bitstring_pattern *pattern[P_TASKS];
-  task_versions versions[P_TASKS];
+  task_versions *versions[P_TASKS];
   uint16_t task_list_index; //always is one position ahead of last filled
 } list;
 
@@ -255,9 +255,13 @@ static fts_version static_next_version(
       if (result_bit == 0)
       {
         printf("\nfts.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+        // void (*b)() = list.versions[i]->basic_pointer;
+        // b();
         return BASIC;
       }
       printf("\nfts.c (static_next_version):SRE RECOVERY, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+      // void (*r)() = list.versions[i]->recovery_pointer;
+      // r();
       return RECOVERY;
     }
     else //SDR
@@ -265,9 +269,14 @@ static fts_version static_next_version(
       if (result_bit == 0)
       {
         printf("\nfts.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+        printf("BASIC POINTER CAUSE PR\n");
+        // void (*b)() = list.versions[i]->basic_pointer;
+        // b();
         return BASIC;
       }
       printf("\nfts.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+      // error_status (*d)(fault_status) = list.versions[i]->detection_pointer;
+      // error_status e_s = d(f_s);
       return DETECTION;
     }
     //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
@@ -282,22 +291,35 @@ uint8_t fts_rtems_task_register(
   fts_tech tech
 )
 {
-  if ((list.task_list_index < P_TASKS) && (task_in_list(id) == -1) && (m_ <= k_) )
+  uint16_t i = list.task_list_index;
+  if ((i < P_TASKS) && (task_in_list(id) == -1) && (m_ <= k_) )
   {
     /* Put all information in the tasklist */
-    list.task_list_id[list.task_list_index] = id;
+    // store ID
+    list.task_list_id[i] = id;
     //output
-    printf("\nfts.c (register): ID %i\n", list.task_list_id[list.task_list_index]);
+    printf("\nfts.c (register): ID %i\n", list.task_list_id[i]);
 
-    list.task_list_tech[list.task_list_index] = tech;
+    // store technique
+    list.task_list_tech[i] = tech;
     //output
-    printf("\nfts.c (register): Tech %i\n", list.task_list_tech[list.task_list_index]);
+    printf("\nfts.c (register): Tech %i\n", list.task_list_tech[i]);
 
-    list.m[list.task_list_index] = m_;
-    list.k[list.task_list_index] = k_;
+    // store (m,k)
+    list.m[i] = m_;
+    list.k[i] = k_;
+    uint8_t m_m = list.m[i];
+    uint8_t k_k = list.k[i];
 
-    uint8_t m_m = list.m[list.task_list_index];
-    uint8_t k_k = list.k[list.task_list_index];
+    // store task versions
+
+    // list.versions[i] = vers;
+    //
+    // void (*ba_pointer)(void) = list.versions[i]->basic_pointer;
+    // error_status (*de_pointer)(fault_status) = list.versions[i]->detection_pointer;
+    // void (*re_pointer)(void) = list.versions[i]->recovery_pointer;
+    //
+    // printf("\nfts.c (register): Adresses of functions:\nB: %p\nD: %p\nR: %p\n",(void *)ba_pointer, (void *)de_pointer, (void *)re_pointer);
 
     printf("\nfts.c (register): List index %i\n", list.task_list_index);
     list.task_list_index++;
@@ -374,8 +396,8 @@ fts_version fts_get_mode(
   return next_version;
 }
 
-/***/
-
+/* removing a task from the tasklist might be dangerous*/
+/* TODO: might be wrong */
 uint8_t fts_off(
   rtems_id id
 )
@@ -423,7 +445,7 @@ uint8_t fts_change_tech(
     list.task_list_tech[list_index] = tech;
     return 1;
   }
-return -1;
+return 0;
 }
 
 
