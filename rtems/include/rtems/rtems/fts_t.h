@@ -96,8 +96,8 @@ typedef struct {
 typedef struct Static_Pattern {
 	uint8_t   	  *pattern_start;
 	uint8_t       *pattern_end;
-	uint8_t	            *curr_pos;
-	uint8_t 	           bitpos;
+	uint8_t	      *curr_pos;
+	uint8_t 	     bitpos;
   uint8_t        max_bitpos;
 } bitstring_pattern;
 
@@ -110,10 +110,11 @@ typedef struct Static_Pattern {
  *1
  */
 uint8_t fts_rtems_task_register(
-  rtems_id id,
+  rtems_id id, //id of the "main" task
   uint8_t m,
   uint8_t k,
-  fts_tech tech
+  fts_tech tech,
+  bitstring_pattern *p
 );
 
 /**

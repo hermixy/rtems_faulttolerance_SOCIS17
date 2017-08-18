@@ -15,7 +15,6 @@ struct Task_ID_List {
   uint16_t task_list_index; //always is one position ahead of last filled
 } list;
 
-
 // typedef struct task_info {
 //   unsigned int executions;
 //   unsigned int detects;
@@ -287,7 +286,8 @@ uint8_t fts_rtems_task_register(
   rtems_id id,
   uint8_t m_,
   uint8_t k_,
-  fts_tech tech
+  fts_tech tech,
+  bitstring_pattern *p
 )
 {
   uint16_t i = list.task_list_index;
@@ -297,12 +297,12 @@ uint8_t fts_rtems_task_register(
     // store ID
     list.task_list_id[i] = id;
     //output
-    printf("\nfts.c (register): ID %i\n", list.task_list_id[i]);
+    printf("\nfts_t.c (register): ID %i\n", list.task_list_id[i]);
 
     // store technique
     list.task_list_tech[i] = tech;
     //output
-    printf("\nfts.c (register): Tech %i\n", list.task_list_tech[i]);
+    printf("\nfts_t.c (register): Tech %i\n", list.task_list_tech[i]);
 
     // store (m,k)
     list.m[i] = m_;
@@ -310,22 +310,17 @@ uint8_t fts_rtems_task_register(
     uint8_t m_m = list.m[i];
     uint8_t k_k = list.k[i];
 
-    // store task versions
-
-    // list.versions[i] = vers;
-    //
-    // void (*ba_pointer)(void) = list.versions[i]->basic_pointer;
-    // error_status (*de_pointer)(fault_status) = list.versions[i]->detection_pointer;
-    // void (*re_pointer)(void) = list.versions[i]->recovery_pointer;
-    //
-    // printf("\nfts.c (register): Adresses of functions:\nB: %p\nD: %p\nR: %p\n",(void *)ba_pointer, (void *)de_pointer, (void *)re_pointer);
-
     printf("\nfts.c (register): List index %i\n", list.task_list_index);
+
+
     list.task_list_index++;
 
     /* Generate (m,k)-pattern, then put in list */
+    // bitstring_pattern p = {.pattern_start = pattern_start,
+    // .pattern_end = pattern_end, .curr_pos = pattern_start,
+    // .bitpos = 0, .max_bitpos = maxbit };
 
-    /*  */
+    uint8_t pa = fts_set_static_pattern(id, p);
 
     /* Output values for (m,k) and ID */
     printf("\nfts.c: m = %i\n", m_m);
@@ -366,12 +361,6 @@ fts_version fts_get_mode(
         break;
 
       case SRE :
-        /*
-        ;
-        char *ptr = (char *)0x0200724C;
-        ;
-        printf("fts.c (get_mode): Problematic address at: %p, value is: %i \n",ptr, *ptr);
-        ; */
         next_version = static_next_version(task_index);
         printf("\nfts.c (get_mode): SRE\n");
         break;

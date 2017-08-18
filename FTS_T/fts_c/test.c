@@ -26,6 +26,9 @@ uint32_t faults_T1 = 0;
 uint32_t maxruns = 16;
 fts_tech curr_tech = SRE;
 
+bitstring_pattern pattern;
+bitstring_pattern *p;
+
 static const uint32_t Periods[] = { 100, 250, 500 };
 static const rtems_name Task_name[] = {
   rtems_build_name( 'B', 'A', 'S', ' '),
@@ -230,10 +233,6 @@ rtems_task Init(
   printf("\nInit: Address of p_s: %p\n", (void *)p_s);
           //printf("\nT1: Address of p_m: %p\n", (void *)p_m);
   printf("\nInit: Address of p_e: %p\n", (void *)p_e);
-
-        /* Build pattern struct */
-  bitstring_pattern pattern = { .pattern_start = p_s, .pattern_end = p_e , .curr_pos = p_s, .bitpos = 0, .max_bitpos = 7};
-  bitstring_pattern *p = &pattern;
 
   rtems_task_delete( rtems_task_self() );
 }
