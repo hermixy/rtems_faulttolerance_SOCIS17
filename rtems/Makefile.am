@@ -25,6 +25,7 @@ include_rtems_rtems_HEADERS += include/rtems/rtems/dpmem.h
 include_rtems_rtems_HEADERS += include/rtems/rtems/dpmemimpl.h
 include_rtems_rtems_HEADERS += include/rtems/rtems/event.h
 include_rtems_rtems_HEADERS += include/rtems/rtems/fts.h
+include_rtems_rtems_HEADERS += include/rtems/rtems/fts_t.h
 include_rtems_rtems_HEADERS += include/rtems/rtems/eventimpl.h
 include_rtems_rtems_HEADERS += include/rtems/rtems/intr.h
 include_rtems_rtems_HEADERS += include/rtems/rtems/message.h
@@ -244,6 +245,7 @@ librtems_a_SOURCES += src/getprocessorcount.c
 
 ## FTS_FILES
 librtems_a_SOURCES += src/fts.c
+librtems_a_SOURCES += src/fts_t.c
 
 if HAS_MP
 # We only build multiprocessing related files if HAS_MP was defined

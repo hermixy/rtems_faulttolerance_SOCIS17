@@ -175,8 +175,8 @@ am__librtems_a_SOURCES_DIST = src/rtemsbuildid.c src/rtemsbuildname.c \
 	src/dpmemident.c src/dpmeminternal2external.c src/workspace.c \
 	src/workspacegreedy.c src/modes.c src/status.c \
 	src/statustext.c src/getcurrentprocessor.c \
-	src/getprocessorcount.c src/fts.c src/eventmp.c src/mp.c \
-	src/msgmp.c src/partmp.c src/semmp.c src/signalmp.c \
+	src/getprocessorcount.c src/fts.c src/fts_t.c src/eventmp.c \
+	src/mp.c src/msgmp.c src/partmp.c src/semmp.c src/signalmp.c \
 	src/taskmp.c
 am__dirstamp = $(am__leading_dot)dirstamp
 @HAS_MP_TRUE@am__objects_1 = src/librtems_a-eventmp.$(OBJEXT) \
@@ -328,7 +328,8 @@ am_librtems_a_OBJECTS = src/librtems_a-rtemsbuildid.$(OBJEXT) \
 	src/librtems_a-statustext.$(OBJEXT) \
 	src/librtems_a-getcurrentprocessor.$(OBJEXT) \
 	src/librtems_a-getprocessorcount.$(OBJEXT) \
-	src/librtems_a-fts.$(OBJEXT) $(am__objects_1)
+	src/librtems_a-fts.$(OBJEXT) src/librtems_a-fts_t.$(OBJEXT) \
+	$(am__objects_1)
 librtems_a_OBJECTS = $(am_librtems_a_OBJECTS)
 DEFAULT_INCLUDES = 
 depcomp = $(SHELL) $(top_srcdir)/../depcomp
@@ -381,8 +382,8 @@ am__include_rtems_rtems_HEADERS_DIST = include/rtems/rtems/asr.h \
 	include/rtems/rtems/clock.h include/rtems/rtems/config.h \
 	include/rtems/rtems/dpmem.h include/rtems/rtems/dpmemimpl.h \
 	include/rtems/rtems/event.h include/rtems/rtems/fts.h \
-	include/rtems/rtems/eventimpl.h include/rtems/rtems/intr.h \
-	include/rtems/rtems/message.h \
+	include/rtems/rtems/fts_t.h include/rtems/rtems/eventimpl.h \
+	include/rtems/rtems/intr.h include/rtems/rtems/message.h \
 	include/rtems/rtems/messageimpl.h include/rtems/rtems/modes.h \
 	include/rtems/rtems/modesimpl.h include/rtems/rtems/object.h \
 	include/rtems/rtems/options.h \
@@ -545,8 +546,8 @@ include_rtems_rtems_HEADERS = include/rtems/rtems/asr.h \
 	include/rtems/rtems/clock.h include/rtems/rtems/config.h \
 	include/rtems/rtems/dpmem.h include/rtems/rtems/dpmemimpl.h \
 	include/rtems/rtems/event.h include/rtems/rtems/fts.h \
-	include/rtems/rtems/eventimpl.h include/rtems/rtems/intr.h \
-	include/rtems/rtems/message.h \
+	include/rtems/rtems/fts_t.h include/rtems/rtems/eventimpl.h \
+	include/rtems/rtems/intr.h include/rtems/rtems/message.h \
 	include/rtems/rtems/messageimpl.h include/rtems/rtems/modes.h \
 	include/rtems/rtems/modesimpl.h include/rtems/rtems/object.h \
 	include/rtems/rtems/options.h \
@@ -618,7 +619,7 @@ librtems_a_SOURCES = src/rtemsbuildid.c src/rtemsbuildname.c \
 	src/dpmemident.c src/dpmeminternal2external.c src/workspace.c \
 	src/workspacegreedy.c src/modes.c src/status.c \
 	src/statustext.c src/getcurrentprocessor.c \
-	src/getprocessorcount.c src/fts.c $(am__append_2)
+	src/getprocessorcount.c src/fts.c src/fts_t.c $(am__append_2)
 PREINSTALL_DIRS = $(PROJECT_INCLUDE)/$(dirstamp) \
 	$(PROJECT_INCLUDE)/rtems/rtems/$(dirstamp)
 DISTCLEANFILES = $(PREINSTALL_DIRS)
@@ -636,6 +637,7 @@ PREINSTALL_FILES = $(PROJECT_INCLUDE)/rtems.h \
 	$(PROJECT_INCLUDE)/rtems/rtems/dpmemimpl.h \
 	$(PROJECT_INCLUDE)/rtems/rtems/event.h \
 	$(PROJECT_INCLUDE)/rtems/rtems/fts.h \
+	$(PROJECT_INCLUDE)/rtems/rtems/fts_t.h \
 	$(PROJECT_INCLUDE)/rtems/rtems/eventimpl.h \
 	$(PROJECT_INCLUDE)/rtems/rtems/intr.h \
 	$(PROJECT_INCLUDE)/rtems/rtems/message.h \
@@ -998,6 +1000,8 @@ src/librtems_a-getprocessorcount.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librtems_a-fts.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/librtems_a-fts_t.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/librtems_a-eventmp.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/librtems_a-mp.$(OBJEXT): src/$(am__dirstamp) \
@@ -1053,6 +1057,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librtems_a-eventsend.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librtems_a-eventsurrender.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librtems_a-fts.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librtems_a-fts_t.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librtems_a-getcurrentprocessor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librtems_a-getprocessorcount.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/librtems_a-intrbody.Po@am__quote@
@@ -3208,6 +3213,20 @@ src/librtems_a-fts.obj: src/fts.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(librtems_a_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o src/librtems_a-fts.obj `if test -f 'src/fts.c'; then $(CYGPATH_W) 'src/fts.c'; else $(CYGPATH_W) '$(srcdir)/src/fts.c'; fi`
 
+src/librtems_a-fts_t.o: src/fts_t.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(librtems_a_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT src/librtems_a-fts_t.o -MD -MP -MF src/$(DEPDIR)/librtems_a-fts_t.Tpo -c -o src/librtems_a-fts_t.o `test -f 'src/fts_t.c' || echo '$(srcdir)/'`src/fts_t.c
+@am__fastdepCC_TRUE@	$(am__mv) src/$(DEPDIR)/librtems_a-fts_t.Tpo src/$(DEPDIR)/librtems_a-fts_t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='src/fts_t.c' object='src/librtems_a-fts_t.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(librtems_a_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o src/librtems_a-fts_t.o `test -f 'src/fts_t.c' || echo '$(srcdir)/'`src/fts_t.c
+
+src/librtems_a-fts_t.obj: src/fts_t.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(librtems_a_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT src/librtems_a-fts_t.obj -MD -MP -MF src/$(DEPDIR)/librtems_a-fts_t.Tpo -c -o src/librtems_a-fts_t.obj `if test -f 'src/fts_t.c'; then $(CYGPATH_W) 'src/fts_t.c'; else $(CYGPATH_W) '$(srcdir)/src/fts_t.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) src/$(DEPDIR)/librtems_a-fts_t.Tpo src/$(DEPDIR)/librtems_a-fts_t.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='src/fts_t.c' object='src/librtems_a-fts_t.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(librtems_a_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o src/librtems_a-fts_t.obj `if test -f 'src/fts_t.c'; then $(CYGPATH_W) 'src/fts_t.c'; else $(CYGPATH_W) '$(srcdir)/src/fts_t.c'; fi`
+
 src/librtems_a-eventmp.o: src/eventmp.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(librtems_a_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT src/librtems_a-eventmp.o -MD -MP -MF src/$(DEPDIR)/librtems_a-eventmp.Tpo -c -o src/librtems_a-eventmp.o `test -f 'src/eventmp.c' || echo '$(srcdir)/'`src/eventmp.c
 @am__fastdepCC_TRUE@	$(am__mv) src/$(DEPDIR)/librtems_a-eventmp.Tpo src/$(DEPDIR)/librtems_a-eventmp.Po
@@ -3654,6 +3673,9 @@ $(PROJECT_INCLUDE)/rtems/rtems/event.h: include/rtems/rtems/event.h $(PROJECT_IN
 
 $(PROJECT_INCLUDE)/rtems/rtems/fts.h: include/rtems/rtems/fts.h $(PROJECT_INCLUDE)/rtems/rtems/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/rtems/fts.h
+
+$(PROJECT_INCLUDE)/rtems/rtems/fts_t.h: include/rtems/rtems/fts_t.h $(PROJECT_INCLUDE)/rtems/rtems/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/rtems/fts_t.h
 
 $(PROJECT_INCLUDE)/rtems/rtems/eventimpl.h: include/rtems/rtems/eventimpl.h $(PROJECT_INCLUDE)/rtems/rtems/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/rtems/eventimpl.h

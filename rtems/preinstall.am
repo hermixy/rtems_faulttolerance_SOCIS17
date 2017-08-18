@@ -79,6 +79,10 @@ $(PROJECT_INCLUDE)/rtems/rtems/fts.h: include/rtems/rtems/fts.h $(PROJECT_INCLUD
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/rtems/fts.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/rtems/rtems/fts.h
 
+$(PROJECT_INCLUDE)/rtems/rtems/fts_t.h: include/rtems/rtems/fts_t.h $(PROJECT_INCLUDE)/rtems/rtems/$(dirstamp)
+	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/rtems/fts_t.h
+PREINSTALL_FILES += $(PROJECT_INCLUDE)/rtems/rtems/fts_t.h
+
 $(PROJECT_INCLUDE)/rtems/rtems/eventimpl.h: include/rtems/rtems/eventimpl.h $(PROJECT_INCLUDE)/rtems/rtems/$(dirstamp)
 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/rtems/eventimpl.h
 PREINSTALL_FILES += $(PROJECT_INCLUDE)/rtems/rtems/eventimpl.h
