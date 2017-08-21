@@ -78,30 +78,6 @@ typedef struct {
 
 
 /**
- * @brief Set static pattern for SRE
- *
- * This data structure is a bitmap which stores the execution pattern of a task.
- * If there is a "1" in the bitmap, the reliable version is executed, and if
- * there is a "0", the unreliable version is executed. The way of iteration is from
- * left to right and lower to higher memory address.
- * With pattern_start, the starting address of the bitmap is specified, and with
- * pattern_end, the ending address.
- * curr_pos stores the current position in the bitmap, and bitpos the current position
- * in the current byte. max_bitpos specifies the last bit-position that should be read
- * in the last byte.
- *
- * For a detailed description of the SRE bitmap refer to:
- * http://ls12-www.cs.tu-dortmund.de/daes/media/documents/publications/downloads/2016-khchen-lctes.pdf
- */
-typedef struct Static_Pattern {
-	uint8_t   	  *pattern_start;
-	uint8_t       *pattern_end;
-	uint8_t	      *curr_pos;
-	uint8_t 	     bitpos;
-  uint8_t        max_bitpos;
-} bitstring_pattern;
-
-/**
  * @brief Register task for protection
  *
  * From the next activation on, the task with the given id will be protected,
@@ -114,7 +90,10 @@ uint8_t fts_rtems_task_register(
   uint8_t m,
   uint8_t k,
   fts_tech tech,
-  bitstring_pattern *p
+  pattern_type pattern,
+  uint8_t *pattern_start,
+  uint8_t *pattern_end,
+  uint8_t max_bitpos
 );
 
 /**
@@ -142,8 +121,15 @@ uint8_t fts_off(
  * is registered for protection.
  *1
  */
+
 uint8_t fts_task_status(
   rtems_id id
+);
+
+
+int8_t create_pattern(
+  int i,
+  pattern_type pattern
 );
 
 /**
@@ -156,16 +142,4 @@ uint8_t fts_task_status(
 uint8_t fts_change_tech(
   rtems_id id,
   fts_tech tech
-);
-
-/**
- * @brief sets the sre pattern
- *
- *
- *
- *1
- */
-int8_t fts_set_sre_pattern(
-  rtems_id id,
-  bitstring_pattern *bmap
 );

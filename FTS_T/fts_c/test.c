@@ -12,7 +12,7 @@
 #define MAX_IT
 
 /* Initiate 24 bit pattern */
-// bytes are initialized bottom to top
+// bytes are initialized bottom to top here
 uint8_t end_p = 0; // first byte of pattern
 //uint8_t mid_p = 0; // second byte
 uint8_t begin_p = 0; //last byte
@@ -21,23 +21,27 @@ uint8_t begin_p = 0; //last byte
 uint8_t * p_s = &begin_p; // address of first byte
 uint8_t * p_e  = &end_p;
 
-uint8_t fault_rate = 20; //percent*10; fault per task
-uint32_t faults_T1 = 0;
-uint32_t maxruns = 16;
+/* set (m,k) */
+uint8_t m = 12;
+uint8_t k = 16;
+
+/* set fault rate */
+uint8_t fault_rate = 20; //percent; fault per task
+uint32_t faults_T1 = 0; //nr of faults
+uint32_t maxruns = 16; //nr of maximum runs
+uint32_t runs = 1;
 fts_tech curr_tech = SRE;
 
-bitstring_pattern pattern;
-bitstring_pattern *p;
-
-static const uint32_t Periods[] = { 100, 250, 500 };
+static const uint32_t Periods[] = { 200, 500, 750, 1000 };
 static const rtems_name Task_name[] = {
+  rtems_build_name( 'M', 'A', 'N', ' '),
   rtems_build_name( 'B', 'A', 'S', ' '),
   rtems_build_name( 'C', 'O', 'R', ' '),
   rtems_build_name( 'R', 'E', 'C', ' ')
 };
 
-static const rtems_task_priority Prio[3] = { 2, 5, 7 };
-static rtems_id   Task_id[ 3 ];
+static const rtems_task_priority Prio[3] = { 2, 5, 7, 9 };
+static rtems_id   Task_id[ 4 ];
 static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
 
 /* initialize seeds for rng */
@@ -190,15 +194,39 @@ rtems_task FTS_MANAGER(
   rtems_task_argument unused
 )
 {
+  rtems_id selfid = rtems_task_self();
   while (1)
   {
     printf("\n*****************************\n");
     printf("\nFTS_MANAGER starts!\n");
+    printf("\nID: %i\n", selfid);
+    printf("\nRun: %i\n", runs);
+    if ( runs == 1 )
+    {
+      srand(seed);
+      /* Print the addresses of pointers */
+      printf("\nInit: Address of p_s: %p\n", (void *)p_s);
+      //printf("\nT1: Address of p_m: %p\n", (void *)p_m);
+      printf("\nInit: Address of p_e: %p\n", (void *)p_e);
 
+      /* register the task set */
+      uint8_t u = fts_rtems_task_register(selfid, m, k, SRE, R_PATTERN, p_s, p_e, 7);
 
-    rtems_id selfid = rtems_task_self();
+      if (u == 1)
+      {
+        printf("\nTask registered\n");
+      }
+    }
+
     /* Pattern initialization and registration */
+    if(runs == maxruns)
+    {
+      printf("\nAll runs finished.\n");
+      rtems_task_delete( rtems_task_self() );
+    }
+    runs++;
     printf("\nManager ends!\n");
+
   }
 };
 
@@ -209,10 +237,11 @@ rtems_task Init(
 {
   rtems_id id = rtems_task_self();
   printf("\nInit: ID: %i\n", id);
-  /* Create two tasks */
+
   int index;
   rtems_status_code status;
 
+  /* Create FTS manager and task modes */
   for ( index = 0; index < RTEMS_ARRAY_SIZE(Task_name); ++index )
   {
     status = rtems_task_create(
@@ -220,20 +249,8 @@ rtems_task Init(
       RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ index ]
     );
   }
-
-  srand(seed);
-
-  /* (m,k) test - set (m,k) */
-  uint8_t m = 12;
-  uint8_t k = 16;
-
-  /* Print the addresses of pointers */
-  uint8_t b_mask = 1;
-
-  printf("\nInit: Address of p_s: %p\n", (void *)p_s);
-          //printf("\nT1: Address of p_m: %p\n", (void *)p_m);
-  printf("\nInit: Address of p_e: %p\n", (void *)p_e);
-
+  // start FTS Manager task
+  status = rtems_task_start( Task_id[ 0 ], FTS_MANAGER, 0);
   rtems_task_delete( rtems_task_self() );
 }
 

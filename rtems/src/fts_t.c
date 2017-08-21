@@ -7,12 +7,18 @@
 // list of task IDs
 
 struct Task_ID_List {
-  rtems_id task_list_id[P_TASKS];
-  uint8_t m[P_TASKS];
-  uint8_t k[P_TASKS];
-  fts_tech task_list_tech[P_TASKS];
-  bitstring_pattern *pattern[P_TASKS];
-  uint16_t task_list_index; //always is one position ahead of last filled
+  rtems_id       task_list_id[P_TASKS];
+  uint8_t        m[P_TASKS];
+  uint8_t        k[P_TASKS];
+  fts_tech       task_list_tech[P_TASKS];
+  uint16_t       task_list_index; //always is one position ahead of last filled
+  /* Pattern specific data */
+  pattern_type   pattern[P_TASKS];
+  uint8_t   	  *pattern_start[P_TASKS];
+  uint8_t       *pattern_end[P_TASKS];
+  uint8_t	      *curr_pos[P_TASKS];
+  uint8_t 	     bitpos[P_TASKS];
+  uint8_t        max_bitpos[P_TASKS];
 } list;
 
 // typedef struct task_info {
@@ -63,7 +69,7 @@ uint8_t show_pattern(
   return 0;
 }
 
-/* */
+/* Check of a certain task is in the list */
 int16_t task_in_list(
   rtems_id id
 )
@@ -79,30 +85,16 @@ int16_t task_in_list(
 }
 // if task is in list already, return 1, -1 else
 
+/* Create and set the (m,k) pattern to the given memory adress */
 int8_t create_pattern(
-  rtems_id id,
-  pattern_type pattern,
-  uint8_t *pattern_s,
-  uint8_t *pattern_e,
-  uint8_t bitpos_max
+  int i,
+  pattern_type pattern
 )
 {
   printf("\nfts.c (create_pattern): in 1\n");
-  /* end-start
-  * int nr_of_bytes = pattern_e - pattern_s;
-  * if (nr_of_bytes * 8 >= list.k[i])
-  * {
-  *   ;
-  * }
-  */
-  int16_t i = task_in_list(id);
-  list.pattern[i]->pattern_start = pattern_s;
-  list.pattern[i]->pattern_end = pattern_e;
-  list.pattern[i]->max_bitpos = bitpos_max;
-
   printf("\nfts.c (create_pattern): m is %i, k is %i\n", list.m[i], list.k[i]);
 
-  uint8_t *pattern_it = pattern_s;
+  uint8_t *pattern_it = list.pattern_start[i];
   /*
   * for details on E and R pattern, check
   * http://ieeexplore.ieee.org/document/1661621/
@@ -130,30 +122,30 @@ int8_t create_pattern(
     pattern_it++;
 
     /* insert remaining "1"s */
-    for (;pattern_it <= pattern_e; pattern_it++)
+    for (;pattern_it <= list.pattern_end[i]; pattern_it++)
     {
       *pattern_it  = ones_8;
     }
   }
+
   /* evenly distributed "1"s
    * for details on E and R pattern, check
    * http://ieeexplore.ieee.org/document/1661621/
    */
-
-  if ( pattern == E_PATTERN )
-  {
+   if ( pattern == E_PATTERN )
+   {
     uint8_t set_byte = 0;
     //for ( int j = 0; j < list.k[i]; j++ )
     //{
     int j = 0;
-    for (;(pattern_it <= pattern_e); pattern_it++)
+    for (;(pattern_it <= list.pattern_end[i]); pattern_it++)
     {
       uint8_t bitmask = BIT_7;
       for (uint8_t it_bits = 0; (it_bits < 8) ; it_bits++)
       {
         int raman = ( (((j*(list.k[i]-list.m[i]))/list.k[i]) + ((j*(list.k[i]-list.m[i]))%list.k[i] != 0) )* list.k[i]/(list.k[i]-list.m[i]) );
 
-        // 'normal' e-pattern
+        // for 'normal' e-pattern:
         //int raman = ( (((j*list.m[i])/list.k[i]) + ((j*list.m[i])%list.k[i] != 0) )* list.k[i]/list.m[i] );
 
         if (j != raman)
@@ -169,34 +161,34 @@ int8_t create_pattern(
     //}
   }
   printf("\nfts.c (create_pattern): ");
-  uint8_t sh = show_pattern(pattern_s, pattern_e, bitpos_max);
+  uint8_t sh = show_pattern(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
   return 1;
 }
 
 // sets the static execution pattern for a task
-int8_t fts_set_static_pattern(
-  rtems_id id,
-  bitstring_pattern *p
-)
-{
-    int static_index = task_in_list(id);
-  //if( (static_index != -1) && list.task_list_tech[static_index] == static )
-  //{
-    list.pattern[static_index] = p;
-
-    show_pattern(p->pattern_start, p->pattern_end, p->max_bitpos);
-
-    uint8_t *p_curr = list.pattern[static_index]->pattern_start;
-    uint8_t *p_end = list.pattern[static_index]->pattern_end;
-
-    printf("\n(set_static_pattern)\n");
-    show_pattern(p_curr, p_end, list.pattern[static_index]->max_bitpos);
-    printf("\nfts.c (set pattern): Address of first byte: %p\n", (void *)list.pattern[static_index]->pattern_start);
-    printf("\nfts.c (set pattern): Address of current byte: %p\n", (void *)list.pattern[static_index]->curr_pos);
-    printf("\nfts.c (set pattern): Address of last byte: %p\n", (void *)list.pattern[static_index]->pattern_end);
-
-    return 1;
-}
+// int8_t fts_set_static_pattern(
+//   rtems_id id,
+//   bitstring_pattern *p
+// )
+// {
+//     int static_index = task_in_list(id);
+//   //if( (static_index != -1) && list.task_list_tech[static_index] == static )
+//   //{
+//     list.pattern[static_index] = p;
+//
+//     show_pattern(p->pattern_start, p->pattern_end, p->max_bitpos);
+//
+//     uint8_t *p_curr = list.pattern[static_index]->pattern_start;
+//     uint8_t *p_end = list.pattern[static_index]->pattern_end;
+//
+//     printf("\n(set_static_pattern)\n");
+//     show_pattern(p_curr, p_end, list.pattern[static_index]->max_bitpos);
+//     printf("\nfts.c (set pattern): Address of first byte: %p\n", (void *)list.pattern[static_index]->pattern_start);
+//     printf("\nfts.c (set pattern): Address of current byte: %p\n", (void *)list.pattern[static_index]->curr_pos);
+//     printf("\nfts.c (set pattern): Address of last byte: %p\n", (void *)list.pattern[static_index]->pattern_end);
+//
+//     return 1;
+// }
 
 ////
 
@@ -205,44 +197,44 @@ static fts_version static_next_version(
 )
 {
 
-    printf("\nfts.c (static next version): Address of first byte: %p\n", (void *)list.pattern[i]->pattern_start);
-    printf("\nfts.c (static next version): Address of current byte: %p\n", (void *)list.pattern[i]->curr_pos);
-    printf("\nfts.c (static next version): Address of last byte: %p\n", (void *)list.pattern[i]->pattern_end);
+    printf("\nfts.c (static next version): Address of first byte: %p\n", (void *)list.pattern_start[i]);
+    printf("\nfts.c (static next version): Address of current byte: %p\n", (void *)list.curr_pos[i]);
+    printf("\nfts.c (static next version): Address of last byte: %p\n", (void *)list.pattern_end[i]);
 
     printf("\nfts.c (static_next_version):  index is %i\n", i);
     printf("\nIn static_next_version:");
 
-    show_pattern(list.pattern[i]->pattern_start, list.pattern[i]->pattern_end, list.pattern[i]->max_bitpos);
+    show_pattern(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
 
-    uint8_t bitpos = list.pattern[i]->bitpos; // bit to be read
-    uint8_t c_byte = *(list.pattern[i]->curr_pos); // byte to be read
+    uint8_t bitpos = list.bitpos[i]; // bit to be read
+    uint8_t c_byte = *(list.curr_pos[i]); // byte to be read
     uint8_t bit_mask_one = BIT_7 >> bitpos;
 
     uint8_t result_bit = c_byte & bit_mask_one;
 
     //if in last byte
-    if (list.pattern[i]->pattern_end == list.pattern[i]->curr_pos)
+    if (list.pattern_end[i] == list.curr_pos[i])
     {
-      if (list.pattern[i]->bitpos < list.pattern[i]->max_bitpos)
+      if (list.bitpos[i] < list.max_bitpos[i])
       {
-        list.pattern[i]->bitpos++;
+        list.bitpos[i]++;
       }
       else
       {
-        list.pattern[i]->bitpos = 0;
-        list.pattern[i]->curr_pos = list.pattern[i]->pattern_start;
+        list.bitpos[i] = 0;
+        list.curr_pos[i] = list.pattern_start[i];
       }
     }
     else
     {
-      if ( list.pattern[i]->bitpos < 7 )
+      if ( list.bitpos[i] < 7 )
       {
-        list.pattern[i]->bitpos++;
+        list.bitpos[i]++;
       }
       else
       {
-        list.pattern[i]->bitpos = 0;
-        list.pattern[i]->curr_pos++;
+        list.bitpos[i] = 0;
+        list.curr_pos[i]++;
       }
     }
 
@@ -252,12 +244,12 @@ static fts_version static_next_version(
     {
       if (result_bit == 0)
       {
-        printf("\nfts.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+        printf("\nfts.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
         // void (*b)() = list.versions[i]->basic_pointer;
         // b();
         return BASIC;
       }
-      printf("\nfts.c (static_next_version):SRE RECOVERY, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+      printf("\nfts.c (static_next_version):SRE RECOVERY, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
       // void (*r)() = list.versions[i]->recovery_pointer;
       // r();
       return RECOVERY;
@@ -266,13 +258,13 @@ static fts_version static_next_version(
     {
       if (result_bit == 0)
       {
-        printf("\nfts.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+        printf("\nfts.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
         printf("BASIC POINTER CAUSE PR\n");
         // void (*b)() = list.versions[i]->basic_pointer;
         // b();
         return BASIC;
       }
-      printf("\nfts.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.pattern[i]->bitpos);
+      printf("\nfts.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
       // error_status (*d)(fault_status) = list.versions[i]->detection_pointer;
       // error_status e_s = d(f_s);
       return DETECTION;
@@ -283,49 +275,49 @@ static fts_version static_next_version(
 /***/
 
 uint8_t fts_rtems_task_register(
-  rtems_id id,
-  uint8_t m_,
-  uint8_t k_,
+  rtems_id id, //id of the "main" task
+  uint8_t m,
+  uint8_t k,
   fts_tech tech,
-  bitstring_pattern *p
+  pattern_type pattern,
+  uint8_t *pattern_start,
+  uint8_t *pattern_end,
+  uint8_t max_bitpos
 )
 {
   uint16_t i = list.task_list_index;
-  if ((i < P_TASKS) && (task_in_list(id) == -1) && (m_ <= k_) )
+  if ((i < P_TASKS) && (task_in_list(id) == -1) && (m <= k) )
   {
     /* Put all information in the tasklist */
     // store ID
     list.task_list_id[i] = id;
     //output
     printf("\nfts_t.c (register): ID %i\n", list.task_list_id[i]);
-
-    // store technique
-    list.task_list_tech[i] = tech;
-    //output
-    printf("\nfts_t.c (register): Tech %i\n", list.task_list_tech[i]);
-
     // store (m,k)
-    list.m[i] = m_;
-    list.k[i] = k_;
+    list.m[i] = m;
+    list.k[i] = k;
     uint8_t m_m = list.m[i];
     uint8_t k_k = list.k[i];
 
-    printf("\nfts.c (register): List index %i\n", list.task_list_index);
-
-
-    list.task_list_index++;
-
-    /* Generate (m,k)-pattern, then put in list */
-    // bitstring_pattern p = {.pattern_start = pattern_start,
-    // .pattern_end = pattern_end, .curr_pos = pattern_start,
-    // .bitpos = 0, .max_bitpos = maxbit };
-
-    uint8_t pa = fts_set_static_pattern(id, p);
-
-    /* Output values for (m,k) and ID */
+    /* Output values for (m,k) */
     printf("\nfts.c: m = %i\n", m_m);
     printf("\nfts.c: k = %i\n", k_k);
-    /*  */
+
+    // store technique
+    list.task_list_tech[i] = tech;
+
+    // set pattern type, E- or R- pattern
+    list.pattern[i] = pattern;
+
+    list.pattern_start[i] = pattern_start;
+    list.pattern_start[i] = pattern_end;
+    list.pattern_end[i] = max_bitpos;
+
+    /* Generate (m,k)-pattern */
+    uint8_t pa = create_pattern(i, pattern);
+    printf("\nfts_t.c (register): Tech %i\n", list.task_list_tech[i]);
+
+    list.task_list_index++;
 
     return 1;
   }
@@ -399,8 +391,12 @@ uint8_t fts_off(
       list.m[i] = list.m[i+1];
       list.k[i] = list.k[i+1];
       list.task_list_tech[i] = list.task_list_tech[i+1];
-      list.pattern[i] = list.pattern[i+1];
 
+      list.pattern_start[i] = list.pattern_start[i+1];
+      list.pattern_end[i] = list.pattern_end[i+1];
+      list.curr_pos[i] = list.curr_pos[i+1];
+      list.bitpos[i] = list.bitpos[i+1];
+      list.max_bitpos[i] = list.max_bitpos[i+1];
     }
     list.task_list_index--;
     return 1;
