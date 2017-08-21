@@ -28,13 +28,13 @@ struct Task_ID_List {
 // };
 
 /* Show the execution pattern in the console */
-uint8_t show_pattern(
+uint8_t show_pattern_t(
   uint8_t *p_curr,
   uint8_t *p_end,
   uint8_t maxbit
 )
 {
-  printf("\n\nfts.c: The pattern is:\n");
+  printf("\n\nfts_h.c: The pattern is:\n");
 
   for (; p_curr <= p_end; p_curr++)
   {
@@ -70,7 +70,7 @@ uint8_t show_pattern(
 }
 
 /* Check of a certain task is in the list */
-int16_t task_in_list(
+int16_t task_in_list_t(
   rtems_id id
 )
 {
@@ -86,19 +86,20 @@ int16_t task_in_list(
 // if task is in list already, return 1, -1 else
 
 /* Create and set the (m,k) pattern to the given memory adress */
-int8_t create_pattern(
+int8_t create_pattern_t(
   int i,
   pattern_type pattern
 )
 {
-  printf("\nfts.c (create_pattern): in 1\n");
-  printf("\nfts.c (create_pattern): m is %i, k is %i\n", list.m[i], list.k[i]);
+  printf("\nfts_t.c (create_pattern): in 1\n");
+  printf("\nfts_t.c (create_pattern): m is %i, k is %i\n", list.m[i], list.k[i]);
 
   uint8_t *pattern_it = list.pattern_start[i];
   /*
   * for details on E and R pattern, check
   * http://ieeexplore.ieee.org/document/1661621/
   */
+
   if ( pattern == R_PATTERN )
   {
     int8_t k_minus_m = list.k[i]-list.m[i];
@@ -160,8 +161,13 @@ int8_t create_pattern(
     }
     //}
   }
-  printf("\nfts.c (create_pattern): ");
-  uint8_t sh = show_pattern(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
+    
+         printf("\nfts_t.c (set pattern): Address of first byte: %p\n", (void *)list.pattern_start[i]);
+         printf("\nfts_t.c (set pattern): Address of current byte: %p\n", (void *)list.curr_pos[i]);
+     printf("\nfts_t.c (set pattern): Address of last byte: %p\n", (void *)list.pattern_end[i]);
+
+  printf("\nfts_t.c (create_pattern): ");
+  uint8_t sh = show_pattern_t(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
   return 1;
 }
 
@@ -192,7 +198,7 @@ int8_t create_pattern(
 
 ////
 
-static fts_version static_next_version(
+static fts_version static_next_version_t(
   int i
 )
 {
@@ -204,7 +210,7 @@ static fts_version static_next_version(
     printf("\nfts.c (static_next_version):  index is %i\n", i);
     printf("\nIn static_next_version:");
 
-    show_pattern(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
+    show_pattern_t(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
 
     uint8_t bitpos = list.bitpos[i]; // bit to be read
     uint8_t c_byte = *(list.curr_pos[i]); // byte to be read
@@ -274,7 +280,7 @@ static fts_version static_next_version(
 
 /***/
 
-uint8_t fts_rtems_task_register(
+uint8_t fts_rtems_task_register_t(
   rtems_id id, //id of the "main" task
   uint8_t m,
   uint8_t k,
@@ -286,7 +292,7 @@ uint8_t fts_rtems_task_register(
 )
 {
   uint16_t i = list.task_list_index;
-  if ((i < P_TASKS) && (task_in_list(id) == -1) && (m <= k) )
+  if ((i < P_TASKS) && (task_in_list_t(id) == -1) && (m <= k) )
   {
     /* Put all information in the tasklist */
     // store ID
@@ -310,11 +316,11 @@ uint8_t fts_rtems_task_register(
     list.pattern[i] = pattern;
 
     list.pattern_start[i] = pattern_start;
-    list.pattern_start[i] = pattern_end;
-    list.pattern_end[i] = max_bitpos;
-
-    /* Generate (m,k)-pattern */
-    uint8_t pa = create_pattern(i, pattern);
+    list.pattern_end[i] = pattern_end;
+    list.curr_pos[i] = pattern_start;
+    list.max_bitpos[i] = max_bitpos;
+    list.bitpos[i] = 7; // 7th bit is first bit
+    uint8_t pa = create_pattern_t(i, pattern);
     printf("\nfts_t.c (register): Tech %i\n", list.task_list_tech[i]);
 
     list.task_list_index++;
@@ -326,19 +332,19 @@ uint8_t fts_rtems_task_register(
 
 /***/
 
-uint8_t fts_init_versions(void)
+uint8_t fts_init_versions_t(void)
 {
   return 1;
 }
 
 /***/
 
-fts_version fts_get_mode(
+fts_version fts_get_mode_t(
   rtems_id id
 )
 {
   printf("\nfts.c (get mode) ID: %i\n", id);
-  int16_t task_index = task_in_list(id);
+  int16_t task_index = task_in_list_t(id);
 
   printf("\nfts.c (get mode): list index %i\n", task_index);
 
@@ -353,12 +359,12 @@ fts_version fts_get_mode(
         break;
 
       case SRE :
-        next_version = static_next_version(task_index);
+        next_version = static_next_version_t(task_index);
         printf("\nfts.c (get_mode): SRE\n");
         break;
 
       case SDR :
-        next_version = static_next_version(task_index);
+        next_version = static_next_version_t(task_index);
         printf("\nfts.c (get_mode): SDR\n");
         break;
 
@@ -378,11 +384,11 @@ fts_version fts_get_mode(
 
 /* removing a task from the tasklist might be dangerous*/
 /* TODO: might be wrong */
-uint8_t fts_off(
+uint8_t fts_off_t(
   rtems_id id
 )
 {
-  int16_t list_index = task_in_list(id);
+  int16_t list_index = task_in_list_t(id);
   if(list_index != -1)
   {
     for (int16_t i = 0; i < list.task_list_index; i++)
@@ -409,7 +415,7 @@ uint8_t fts_off(
 
 /***/
 
-uint8_t fts_task_status(
+uint8_t fts_task_status_t(
   rtems_id id
 )
 {
@@ -418,12 +424,12 @@ uint8_t fts_task_status(
 
 /***/
 
-uint8_t fts_change_tech(
+uint8_t fts_change_tech_t(
   rtems_id id,
   fts_tech tech
 )
 {
-  int16_t list_index = task_in_list(id);
+  int16_t list_index = task_in_list_t(id);
   if(list_index != -1)
   {
     list.task_list_tech[list_index] = tech;

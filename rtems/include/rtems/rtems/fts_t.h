@@ -85,7 +85,7 @@ typedef struct {
  *
  *1
  */
-uint8_t fts_rtems_task_register(
+uint8_t fts_rtems_task_register_t(
   rtems_id id, //id of the "main" task
   uint8_t m,
   uint8_t k,
@@ -102,7 +102,7 @@ uint8_t fts_rtems_task_register(
  * Informs the FTS about the available task versions of the protected task.
  *1
  */
-uint8_t fts_init_versions(void);
+uint8_t fts_init_versions_t(void);
 
 /**
  * @brief Sign off from FTS
@@ -110,7 +110,7 @@ uint8_t fts_init_versions(void);
  * Signs off a protected task from the FTS.
  *1
  */
-uint8_t fts_off(
+uint8_t fts_off_t(
   rtems_id id
 );
 
@@ -122,12 +122,12 @@ uint8_t fts_off(
  *1
  */
 
-uint8_t fts_task_status(
+uint8_t fts_task_status_t(
   rtems_id id
 );
 
 
-int8_t create_pattern(
+int8_t create_pattern_t(
   int i,
   pattern_type pattern
 );
@@ -139,7 +139,7 @@ int8_t create_pattern(
  * specified in the parameter.
  *1
  */
-uint8_t fts_change_tech(
+uint8_t fts_change_tech_t(
   rtems_id id,
   fts_tech tech
 );

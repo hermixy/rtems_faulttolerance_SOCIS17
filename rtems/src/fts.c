@@ -282,34 +282,33 @@ static fts_version static_next_version(
     //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
 }
 
-/***/
 
-uint8_t fts_rtems_task_register(
-  rtems_id id,
-  uint8_t m_,
-  uint8_t k_,
-  fts_tech tech
-)
-{
-  uint16_t i = list.task_list_index;
-  if ((i < P_TASKS) && (task_in_list(id) == -1) && (m_ <= k_) )
-  {
+//uint8_t fts_rtems_task_register(
+  //rtems_id id,
+  //uint8_t m_,
+  //uint8_t k_,
+  //fts_tech tech
+//)
+//{
+  //uint16_t i = list.task_list_index;
+  //if ((i < P_TASKS) && (task_in_list(id) == -1) && (m_ <= k_) )
+  //{
     /* Put all information in the tasklist */
     // store ID
-    list.task_list_id[i] = id;
+    //list.task_list_id[i] = id;
     //output
-    printf("\nfts.c (register): ID %i\n", list.task_list_id[i]);
+    //printf("\nfts.c (register): ID %i\n", list.task_list_id[i]);
 
     // store technique
-    list.task_list_tech[i] = tech;
+    //list.task_list_tech[i] = tech;
     //output
-    printf("\nfts.c (register): Tech %i\n", list.task_list_tech[i]);
+    //printf("\nfts.c (register): Tech %i\n", list.task_list_tech[i]);
 
     // store (m,k)
-    list.m[i] = m_;
-    list.k[i] = k_;
-    uint8_t m_m = list.m[i];
-    uint8_t k_k = list.k[i];
+    //list.m[i] = m_;
+    //list.k[i] = k_;
+    //uint8_t m_m = list.m[i];
+    //uint8_t k_k = list.k[i];
 
     // store task versions
 
@@ -321,22 +320,24 @@ uint8_t fts_rtems_task_register(
     //
     // printf("\nfts.c (register): Adresses of functions:\nB: %p\nD: %p\nR: %p\n",(void *)ba_pointer, (void *)de_pointer, (void *)re_pointer);
 
-    printf("\nfts.c (register): List index %i\n", list.task_list_index);
-    list.task_list_index++;
+    //printf("\nfts.c (register): List index %i\n", list.task_list_index);
+//printf("EEEE");
+   // list.task_list_index++;
 
     /* Generate (m,k)-pattern, then put in list */
 
-    /*  */
+   
 
-    /* Output values for (m,k) and ID */
-    printf("\nfts.c: m = %i\n", m_m);
-    printf("\nfts.c: k = %i\n", k_k);
-    /*  */
+   
+    //printf("\nfts.c: m = %i\n", m_m);
+    //printf("\nfts.c: k = %i\n", k_k);
+    
 
-    return 1;
-  }
-  return 0;
-}
+   // return 1;
+  //}
+  //return 0;
+//}
+
 
 /***/
 

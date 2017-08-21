@@ -210,7 +210,7 @@ rtems_task FTS_MANAGER(
       printf("\nInit: Address of p_e: %p\n", (void *)p_e);
 
       /* register the task set */
-      uint8_t u = fts_rtems_task_register(selfid, m, k, SRE, R_PATTERN, p_s, p_e, 7);
+      uint8_t u = fts_rtems_task_register_t(selfid, m, k, SRE, R_PATTERN, p_s, p_e, 7);
 
       if (u == 1)
       {

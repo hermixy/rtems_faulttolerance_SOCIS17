@@ -121,12 +121,12 @@ typedef struct Task_Versions {
  *
  *1
  */
-uint8_t fts_rtems_task_register(
-  rtems_id id,
-  uint8_t m,
-  uint8_t k,
-  fts_tech tech
-);
+//uint8_t fts_rtems_task_register(
+  //rtems_id id,
+  //uint8_t m,
+  //uint8_t k,
+  //fts_tech tech
+//);
 
 /**
  * @brief Initialize avalible task versions
