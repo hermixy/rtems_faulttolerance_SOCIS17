@@ -1,6 +1,3 @@
-#include <rtems.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <rtems/rtems/fts_t.h>
 
 #ifdef HAVE_CONFIG_H

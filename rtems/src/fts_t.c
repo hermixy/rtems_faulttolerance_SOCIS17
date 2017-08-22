@@ -3,15 +3,16 @@
 // can protect up to P_TASK tasks
 #define P_TASKS 10
 #define BIT_7 128
+
 // data structure
 // list of task IDs
-
 struct Task_ID_List {
   rtems_id       task_list_id[P_TASKS];
   uint8_t        m[P_TASKS];
   uint8_t        k[P_TASKS];
   fts_tech       task_list_tech[P_TASKS];
   uint16_t       task_list_index; //always is one position ahead of last filled
+
   /* Pattern specific data */
   pattern_type   pattern[P_TASKS];
   uint8_t   	  *pattern_start[P_TASKS];
@@ -20,12 +21,6 @@ struct Task_ID_List {
   uint8_t 	     bitpos[P_TASKS];
   uint8_t        max_bitpos[P_TASKS];
 } list;
-
-// typedef struct task_info {
-//   unsigned int executions;
-//   unsigned int detects;
-//   unsigned int corrects;
-// };
 
 /* Show the execution pattern in the console */
 uint8_t show_pattern_t(
@@ -161,42 +156,15 @@ int8_t create_pattern_t(
     }
     //}
   }
-    
-         printf("\nfts_t.c (set pattern): Address of first byte: %p\n", (void *)list.pattern_start[i]);
-         printf("\nfts_t.c (set pattern): Address of current byte: %p\n", (void *)list.curr_pos[i]);
-     printf("\nfts_t.c (set pattern): Address of last byte: %p\n", (void *)list.pattern_end[i]);
+
+  printf("\nfts_t.c (create_pattern): Address of first byte: %p\n", (void *)list.pattern_start[i]);
+  printf("\nfts_t.c (create_pattern): Address of current byte: %p\n", (void *)list.curr_pos[i]);
+  printf("\nfts_t.c (create_pattern): Address of last byte: %p\n", (void *)list.pattern_end[i]);
 
   printf("\nfts_t.c (create_pattern): ");
   uint8_t sh = show_pattern_t(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
   return 1;
 }
-
-// sets the static execution pattern for a task
-// int8_t fts_set_static_pattern(
-//   rtems_id id,
-//   bitstring_pattern *p
-// )
-// {
-//     int static_index = task_in_list(id);
-//   //if( (static_index != -1) && list.task_list_tech[static_index] == static )
-//   //{
-//     list.pattern[static_index] = p;
-//
-//     show_pattern(p->pattern_start, p->pattern_end, p->max_bitpos);
-//
-//     uint8_t *p_curr = list.pattern[static_index]->pattern_start;
-//     uint8_t *p_end = list.pattern[static_index]->pattern_end;
-//
-//     printf("\n(set_static_pattern)\n");
-//     show_pattern(p_curr, p_end, list.pattern[static_index]->max_bitpos);
-//     printf("\nfts.c (set pattern): Address of first byte: %p\n", (void *)list.pattern[static_index]->pattern_start);
-//     printf("\nfts.c (set pattern): Address of current byte: %p\n", (void *)list.pattern[static_index]->curr_pos);
-//     printf("\nfts.c (set pattern): Address of last byte: %p\n", (void *)list.pattern[static_index]->pattern_end);
-//
-//     return 1;
-// }
-
-////
 
 static fts_version static_next_version_t(
   int i

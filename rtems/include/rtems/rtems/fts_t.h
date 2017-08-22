@@ -1,4 +1,8 @@
-#include <rtems/rtems/types.h>/**
+#include <rtems/rtems/types.h>
+#include <rtems.h>
+#include <stdlib.h>
+#include <stdio.h>
+/**
  * @brief The protection versions of a task
  *
  * The detection version can detect errors, the recovery version can correct errors.
@@ -75,6 +79,13 @@ typedef struct {
   uint8_t m;
   uint8_t k;
 } m_k;
+
+rtems_task BASIC_V();
+
+rtems_task DETECTION_V();
+
+rtems_task CORRECTION_V();
+
 
 
 /**
