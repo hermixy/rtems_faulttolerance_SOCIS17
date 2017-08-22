@@ -18,6 +18,11 @@ uint8_t begin_p = 0; //last byte
 uint8_t * p_s = &begin_p; // address of first byte
 uint8_t * p_e  = &end_p;
 
+/* rtems task pointers */
+rtems_task *basic;
+rtems_task *detection;
+rtems_task *recovery;
+
 /* set (m,k) */
 uint8_t m = 12;
 uint8_t k = 16;
@@ -38,7 +43,7 @@ static const rtems_name Task_name[] = {
 };
 
 static const rtems_task_priority Prio[3] = { 2, 5, 7, 9 };
-static rtems_id   Task_id[ 4 ];
+//static rtems_id   Task_id[ 4 ];
 static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
 
 /* initialize seeds for rng */
@@ -100,6 +105,7 @@ uint8_t s_p(uint8_t *p_curr, uint8_t *p_end, uint8_t maxbit)
     printf("\n");
     //break;
   }
+  return 0;
 }
 
 /* basic version task */
@@ -208,12 +214,21 @@ rtems_task FTS_MANAGER(
 
       /* register the task set */
       uint8_t u = fts_rtems_task_register_t(selfid, m, k, SRE, R_PATTERN, p_s, p_e, 7);
-
       if (u == 1)
       {
         printf("\nTask registered\n");
       }
+
+      basic = &BASIC_V;
+      detection = &DETECTION_V;
+      recovery = &CORRECTION_V;
+      //
+      printf("\nAddress of B: %p\n", (void *)basic);
+      printf("\nAddress of D: %p\n", (void *)detection);
+      printf("\nAddress of R: %p\n", (void *)recovery);
     }
+
+    fts_version ver = fts_compensate_t(selfid);
 
     /* Pattern initialization and registration */
     if(runs == maxruns)
@@ -226,6 +241,7 @@ rtems_task FTS_MANAGER(
 
   }
 };
+
 
 /* Initialization: Create and start task */
 rtems_task Init(
@@ -264,7 +280,7 @@ rtems_task Init(
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 
-#define CONFIGURE_MAXIMUM_TASKS 3
+#define CONFIGURE_MAXIMUM_TASKS 5
 
 #define CONFIGURE_INIT
 #include <rtems/confdefs.h>

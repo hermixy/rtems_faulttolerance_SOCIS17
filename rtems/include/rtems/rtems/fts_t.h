@@ -86,7 +86,7 @@ rtems_task DETECTION_V();
 
 rtems_task CORRECTION_V();
 
-
+static rtems_id   Task_id[ 4 ];
 
 /**
  * @brief Register task for protection

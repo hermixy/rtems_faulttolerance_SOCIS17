@@ -20,7 +20,36 @@ struct Task_ID_List {
   uint8_t	      *curr_pos[P_TASKS];
   uint8_t 	     bitpos[P_TASKS];
   uint8_t        max_bitpos[P_TASKS];
+
+  /* Versions */
+  // rtems_task    *b[P_TASKS];
+  // rtems_task    *d[P_TASKS];
+  // rtems_task    *c[P_TASKS];
 } list;
+
+/* Check of a certain task is in the list */
+int16_t task_in_list_t(
+  rtems_id id
+)
+{
+  for (int i = 0; i < list.task_list_index; i++)
+  {
+    if (list.task_list_id[i] == id)
+    {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/* pointers to task versions */
+// void set_p(rtems_id id, rtems_task *b, rtems_task *d, rtems_task *c)
+// {
+//   int16_t i = task_in_list_t(id);
+//   list.b[i] = b;
+//   list.d[i] = d;
+//   list.c[i] = c;
+// }
 
 /* Show the execution pattern in the console */
 uint8_t show_pattern_t(
@@ -64,21 +93,6 @@ uint8_t show_pattern_t(
   return 0;
 }
 
-/* Check of a certain task is in the list */
-int16_t task_in_list_t(
-  rtems_id id
-)
-{
-  for (int i = 0; i < list.task_list_index; i++)
-  {
-    if (list.task_list_id[i] == id)
-    {
-      return i;
-    }
-  }
-  return -1;
-}
-// if task is in list already, return 1, -1 else
 
 /* Create and set the (m,k) pattern to the given memory adress */
 int8_t create_pattern_t(
@@ -218,29 +232,29 @@ static fts_version static_next_version_t(
     {
       if (result_bit == 0)
       {
-        printf("\nfts.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-        // void (*b)() = list.versions[i]->basic_pointer;
-        // b();
+        printf("\nfts_t.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+        rtems_status_code status;
+        status = rtems_task_start( Task_id[ 1 ], BASIC_V, 0);
         return BASIC;
       }
-      printf("\nfts.c (static_next_version):SRE RECOVERY, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-      // void (*r)() = list.versions[i]->recovery_pointer;
-      // r();
+      printf("\nfts_t.c (static_next_version):SRE RECOVERY, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+      rtems_status_code status;
+      status = rtems_task_start( Task_id[ 3 ], CORRECTION_V, 0);
       return RECOVERY;
     }
     else //SDR
     {
       if (result_bit == 0)
       {
-        printf("\nfts.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+        printf("\nfts_t.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
         printf("BASIC POINTER CAUSE PR\n");
-        // void (*b)() = list.versions[i]->basic_pointer;
-        // b();
+        rtems_status_code status;
+        status = rtems_task_start( Task_id[ 1 ], BASIC_V, 0);
         return BASIC;
       }
-      printf("\nfts.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-      // error_status (*d)(fault_status) = list.versions[i]->detection_pointer;
-      // error_status e_s = d(f_s);
+      printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+      rtems_status_code status;
+      status = rtems_task_start( Task_id[ 2 ], DETECTION_V, 0);
       return DETECTION;
     }
     //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
@@ -274,8 +288,8 @@ uint8_t fts_rtems_task_register_t(
     uint8_t k_k = list.k[i];
 
     /* Output values for (m,k) */
-    printf("\nfts.c: m = %i\n", m_m);
-    printf("\nfts.c: k = %i\n", k_k);
+    printf("\nfts_t.c: m = %i\n", m_m);
+    printf("\nfts_t.c: k = %i\n", k_k);
 
     // store technique
     list.task_list_tech[i] = tech;
@@ -287,7 +301,7 @@ uint8_t fts_rtems_task_register_t(
     list.pattern_end[i] = pattern_end;
     list.curr_pos[i] = pattern_start;
     list.max_bitpos[i] = max_bitpos;
-    list.bitpos[i] = 7; // 7th bit is first bit
+    list.bitpos[i] = 0;
     uint8_t pa = create_pattern_t(i, pattern);
     printf("\nfts_t.c (register): Tech %i\n", list.task_list_tech[i]);
 
@@ -307,14 +321,14 @@ uint8_t fts_init_versions_t(void)
 
 /***/
 
-fts_version fts_get_mode_t(
+fts_version fts_compensate_t(
   rtems_id id
 )
 {
-  printf("\nfts.c (get mode) ID: %i\n", id);
+  printf("\nfts_t.c (comp) ID: %i\n", id);
   int16_t task_index = task_in_list_t(id);
 
-  printf("\nfts.c (get mode): list index %i\n", task_index);
+  printf("\nfts_t.c (comp): list index %i\n", task_index);
 
   fts_version next_version;
   if (task_index != -1)
@@ -323,32 +337,34 @@ fts_version fts_get_mode_t(
     {
       case NONE :
         next_version = BASIC;
-        printf("\nfts.c (get_mode): NONE\n");
+        printf("\nfts_t.c (comp): NONE\n");
         break;
 
       case SRE :
         next_version = static_next_version_t(task_index);
-        printf("\nfts.c (get_mode): SRE\n");
+        printf("\nfts_t.c (comp): SRE\n");
         break;
 
       case SDR :
         next_version = static_next_version_t(task_index);
-        printf("\nfts.c (get_mode): SDR\n");
+        printf("\nfts_t.c (comp): SDR\n");
         break;
 
       case DRE :
         next_version = RECOVERY;
-        printf("\nfts.c (get_mode): DRE\n");
+        printf("\nfts_t.c (comp): DRE\n");
         break;
 
       case DDR :
         next_version = RECOVERY;
-        printf("\nfts.c (get_mode): DDR\n");
+        printf("\nfts_t.c (comp): DDR\n");
         break;
     }
   }
   return next_version;
 }
+
+
 
 /* removing a task from the tasklist might be dangerous*/
 /* TODO: might be wrong */
