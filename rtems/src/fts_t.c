@@ -22,10 +22,38 @@ struct Task_ID_List {
   uint8_t        max_bitpos[P_TASKS];
 
   /* Versions */
-  // rtems_task    *b[P_TASKS];
-  // rtems_task    *d[P_TASKS];
-  // rtems_task    *c[P_TASKS];
+  rtems_task    *b[P_TASKS];
+  rtems_task    *d[P_TASKS];
+  rtems_task    *c[P_TASKS];
 } list;
+
+
+void task_status(rtems_status_code s)
+{
+  switch(s)
+  {
+    case RTEMS_SUCCESSFUL  :
+    printf("\nRTEMS_SUCCESSFUL\n");
+    break;
+
+    case RTEMS_INVALID_ADDRESS  :
+    printf("\nRTEMS_INVALID_ADDRESS\n");
+    break;
+
+    case RTEMS_INVALID_ID  :
+    printf("\nRTEMS_INVALID_ID\n");
+    break;
+
+    case RTEMS_INCORRECT_STATE  :
+    printf("\nRTEMS_INCORRECT_STATE\n");
+    break;
+
+    case RTEMS_ILLEGAL_ON_REMOTE_OBJECT  :
+    printf("\nRTEMS_ILLEGAL_ON_REMOTE_OBJECT\n");
+    break;
+  }
+  return 0;
+}
 
 /* Check of a certain task is in the list */
 int16_t task_in_list_t(
@@ -43,13 +71,13 @@ int16_t task_in_list_t(
 }
 
 /* pointers to task versions */
-// void set_p(rtems_id id, rtems_task *b, rtems_task *d, rtems_task *c)
-// {
-//   int16_t i = task_in_list_t(id);
-//   list.b[i] = b;
-//   list.d[i] = d;
-//   list.c[i] = c;
-// }
+void set_p(rtems_id id, rtems_task *b, rtems_task *d, rtems_task *c)
+{
+  int16_t i = task_in_list_t(id);
+  list.b[i] = b;
+  list.d[i] = d;
+  list.c[i] = c;
+}
 
 /* Show the execution pattern in the console */
 uint8_t show_pattern_t(
@@ -228,18 +256,29 @@ static fts_version static_next_version_t(
 
     fts_tech tech = list.task_list_tech[i];
 
+    rtems_status_code status;
     if (tech == SRE)
     {
       if (result_bit == 0)
       {
         printf("\nfts_t.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-        rtems_status_code status;
-        status = rtems_task_start( Task_id[ 1 ], BASIC_V, 0);
+        status = rtems_task_create(Task_name[ 1 ], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
+           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]);
+        task_status(status);
+
+        status = rtems_task_start( Task_id[ 1 ], list.b[i], 0);
+        task_status(status);
+
         return BASIC;
       }
       printf("\nfts_t.c (static_next_version):SRE RECOVERY, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-      rtems_status_code status;
-      status = rtems_task_start( Task_id[ 3 ], CORRECTION_V, 0);
+      status = rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+         RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]);
+      task_status(status);
+
+      status = rtems_task_start( Task_id[ 3 ], list.c[i], 0);
+      task_status(status);
+
       return RECOVERY;
     }
     else //SDR
@@ -248,13 +287,13 @@ static fts_version static_next_version_t(
       {
         printf("\nfts_t.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
         printf("BASIC POINTER CAUSE PR\n");
-        rtems_status_code status;
-        status = rtems_task_start( Task_id[ 1 ], BASIC_V, 0);
+        status = rtems_task_start( Task_id[ 1 ], list.b[i], 0);
+        task_status(status);
         return BASIC;
       }
       printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-      rtems_status_code status;
-      status = rtems_task_start( Task_id[ 2 ], DETECTION_V, 0);
+      status = rtems_task_start( Task_id[ 2 ], list.d[i], 0);
+      task_status(status);
       return DETECTION;
     }
     //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)

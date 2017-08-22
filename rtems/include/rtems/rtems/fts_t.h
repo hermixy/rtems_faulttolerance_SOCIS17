@@ -2,6 +2,7 @@
 #include <rtems.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 /**
  * @brief The protection versions of a task
  *
@@ -87,6 +88,18 @@ rtems_task DETECTION_V();
 rtems_task CORRECTION_V();
 
 static rtems_id   Task_id[ 4 ];
+
+static const uint32_t Periods[] = { 1000, 1000, 1000, 1000 };
+static const rtems_name Task_name[] = {
+  rtems_build_name( 'M', 'A', 'N', ' '),
+  rtems_build_name( 'B', 'A', 'S', ' '),
+  rtems_build_name( 'C', 'O', 'R', ' '),
+  rtems_build_name( 'R', 'E', 'C', ' ')
+};
+
+static const rtems_task_priority Prio[] = { 9, 4, 4, 4 };
+//static rtems_id   Task_id[ 4 ];
+static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
 
 /**
  * @brief Register task for protection
