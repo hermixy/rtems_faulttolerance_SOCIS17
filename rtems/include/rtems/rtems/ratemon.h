@@ -202,6 +202,7 @@ typedef struct {
   /**
    * @brief Protects the rate monotonic period state.
    */
+  // macro, creates ISR lock control type
   ISR_LOCK_MEMBER(                        Lock )
 
   /** This is the timer used to provide the unblocking mechanism. */

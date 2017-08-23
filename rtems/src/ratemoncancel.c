@@ -68,3 +68,11 @@ rtems_status_code rtems_rate_monotonic_cancel(
   _Rate_monotonic_Cancel( the_period, executing, &lock_context );
   return RTEMS_SUCCESSFUL;
 }
+
+/* */
+rtems_status_code rtems_rate_monotonic_cancel_fts(
+  rtems_id id
+)
+{
+  return RTEMS_SUCCESSFUL;
+}

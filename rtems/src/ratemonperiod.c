@@ -312,12 +312,14 @@ rtems_status_code rtems_rate_monotonic_period(
   Thread_Control                    *executing;
   rtems_status_code                  status;
   rtems_rate_monotonic_period_states state;
-
+   
+  //check if period is valid
   the_period = _Rate_monotonic_Get( id, &lock_context );
   if ( the_period == NULL ) {
     return RTEMS_INVALID_ID;
   }
 
+  //check if task is holing resource
   executing = _Thread_Executing;
   if ( executing != the_period->owner ) {
     _ISR_lock_ISR_enable( &lock_context );
@@ -392,4 +394,13 @@ rtems_status_code rtems_rate_monotonic_period(
   }
 
   return status;
+}
+
+/* */
+rtems_status_code rtems_rate_monotonic_period_fts(
+  rtems_id       id,
+  rtems_interval length
+)
+{
+    return RTEMS_SUCCESSFUL;
 }

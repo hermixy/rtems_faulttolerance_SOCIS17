@@ -45,3 +45,11 @@ rtems_status_code rtems_rate_monotonic_delete(
 
   return status;
 }
+
+/* */
+rtems_status_code rtems_rate_monotonic_delete_fts(
+  rtems_id id 
+)
+{
+  return RTEMS_SUCCESSFUL;
+}
