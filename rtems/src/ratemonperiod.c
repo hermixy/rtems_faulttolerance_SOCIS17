@@ -302,39 +302,52 @@ static rtems_status_code _Rate_monotonic_Block_while_expired(
   return RTEMS_TIMEOUT;
 }
 
+/* This is the function that is called by the user when starting a period */
+/* It takes the period ID and the length of the time interval */
 rtems_status_code rtems_rate_monotonic_period(
   rtems_id       id,
   rtems_interval length
 )
 {
+  /* Control block to manage periods, struct in ratemon.h */
   Rate_monotonic_Control            *the_period;
+  /* A lock */
   ISR_lock_Context                   lock_context;
+  /* A variable for a TCB */
   Thread_Control                    *executing;
+  /* Status codes */
   rtems_status_code                  status;
   rtems_rate_monotonic_period_states state;
-   
-  //check if period is valid
+
+  //check if period has valid ID
   the_period = _Rate_monotonic_Get( id, &lock_context );
   if ( the_period == NULL ) {
     return RTEMS_INVALID_ID;
   }
 
-  //check if task is holing resource
+  //task which executes needs to be the owner which was set in create earlier
+  //if not own, then do stuff
   executing = _Thread_Executing;
   if ( executing != the_period->owner ) {
     _ISR_lock_ISR_enable( &lock_context );
     return RTEMS_NOT_OWNER_OF_RESOURCE;
   }
-
+  /* Begin critical sequence with locking period control block */
   _Rate_monotonic_Acquire_critical( the_period, &lock_context );
 
+  /* save current state of period */
   state = the_period->state;
 
+  /* if length of period is equal to (WATCHDOG_NO_TIMEOUT?) exceeded length ?... */
   if ( length == RTEMS_PERIOD_STATUS ) {
+    /* if true, immediately return status and end function */
     status = _Rate_monotonic_Get_status_for_state( state );
+    /* release lock from Perdioc CB */
     _Rate_monotonic_Release( the_period, &lock_context );
   } else {
+    /* first check period state */
     switch ( state ) {
+      //if period is active
       case RATE_MONOTONIC_ACTIVE:
 
         if( the_period->postponed_jobs > 0 ){
@@ -346,16 +359,19 @@ rtems_status_code rtems_rate_monotonic_period(
            * Do nothing on the watchdog deadline assignment but release the
            * next remaining postponed job.
            */
+           //block period while expired
           status = _Rate_monotonic_Block_while_expired(
             the_period,
             length,
             executing,
             &lock_context
           );
+          /* if there are no postponed jobs */
         }else{
           /*
            * Normal case that no postponed jobs and no expiration, so wait for
            * the period and update the deadline of watchdog accordingly.
+           * block while active
            */
           status = _Rate_monotonic_Block_while_active(
             the_period,
@@ -365,6 +381,7 @@ rtems_status_code rtems_rate_monotonic_period(
           );
         }
         break;
+        //of inactive, activate immediately
       case RATE_MONOTONIC_INACTIVE:
         status = _Rate_monotonic_Activate(
           the_period,
@@ -372,6 +389,9 @@ rtems_status_code rtems_rate_monotonic_period(
           executing,
           &lock_context
         );
+        /* FTS RELEASE TASKS */
+        /* Ask fts scheduler to start a task ? */
+        /* do I put in ready queue by "hand" ? or use create and start task ?*/
         break;
       default:
         /*
@@ -381,6 +401,7 @@ rtems_status_code rtems_rate_monotonic_period(
          *
          * Maybe there is more than one job postponed due to the preemption or
          * the previous finished job.
+         * EXPIRED
          */
         _Assert( state == RATE_MONOTONIC_EXPIRED );
         status = _Rate_monotonic_Block_while_expired(

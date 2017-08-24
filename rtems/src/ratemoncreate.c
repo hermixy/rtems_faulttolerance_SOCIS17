@@ -96,23 +96,27 @@ rtems_status_code rtems_rate_monotonic_create_fts(
   pattern_type pattern,
   uint8_t *pattern_start,
   uint8_t *pattern_end,
-  uint8_t max_bitpos
+  uint8_t max_bitpos,
+  rtems_task *basic,
+  rtems_task *detection,
+  rtems_task *recovery
 )
 {
   /* Rate monotonic control block, check ratemon.h */
+  /* The ID of the period is stored in a Object_Control struct (which is in the Rate_monotonic_Control struct, which stores name and ID of period, as well as Node)*/
   Rate_monotonic_Control *the_period;
-  
-  /* Check if name is valid */    
+
+  /* Check if name is valid */
   if ( !rtems_is_name_valid( name ) )
     return RTEMS_INVALID_NAME;
-  
-  /* Check if ID of calling task is valid */   
+
+  /* Check if ID of calling task is valid */
   if ( !id )
     return RTEMS_INVALID_ADDRESS;
 
   /* Allocates period control block from inactive chain (DLL) of free period control blocks, such as in ratemon.h */
   the_period = _Rate_monotonic_Allocate();
-  
+
   /* Unlocks the object allocator mutex if there are too many in chain */
   if ( !the_period ) {
     _Objects_Allocator_unlock();
@@ -121,7 +125,7 @@ rtems_status_code rtems_rate_monotonic_create_fts(
 
   /* Initialize ISR lock to begin critical section */
   _ISR_lock_Initialize( &the_period->Lock, "Rate Monotonic Period" );
- 
+
   /* the_period is a priority_node struct, includes priority and a node object (rbtree + chain node) to build the priority aggregate, see priority.h */
   /* in priorotyimpl.h, takes priority_node and actual priority. why 0 ? */
   _Priority_Node_initialize( &the_period->Priority, 0 );
@@ -145,11 +149,29 @@ rtems_status_code rtems_rate_monotonic_create_fts(
     (Objects_Name) name
   );
   /* Object is Objects_Control type and has id, node and name. Are stored in a chain */
-  // but this was not set ? maybe later... 
+  // but this was not set ? maybe later...
   *id = the_period->Object.id;
   /* No need to lock object anymore, finished setting data */
   _Objects_Allocator_unlock();
 
-  /* SET STUFF FOR FTS HERE */
-  return RTEMS_SUCCESSFUL;        
+  /* SET STUFF FOR FTS */
+  uint8_t reg = fts_rtems_task_register_t(
+  *id, //id of the period. // in threadq.h, the struct of the TCB is defined
+  m,
+  k,
+  tech,
+  pattern,
+  pattern_start,
+  pattern_end,
+  max_bitpos,
+  basic,
+  detection,
+  recovery
+  );
+
+  if ( reg == 0 ) {
+    return RTEMS_INVALID_NUMBER;
+  }
+
+  return RTEMS_SUCCESSFUL;
 }

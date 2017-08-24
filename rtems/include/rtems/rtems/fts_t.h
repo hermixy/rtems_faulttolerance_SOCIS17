@@ -87,18 +87,19 @@ rtems_task DETECTION_V();
 
 rtems_task CORRECTION_V();
 
-static rtems_id   Task_id[ 4 ];
+static rtems_id   Task_id[ 5 ];
 
-static const uint32_t Periods[] = { 1000, 1000, 1000, 1000 };
+static const uint32_t Periods[] = { 1000, 1000, 1000, 1000, 1000 };
 static const rtems_name Task_name[] = {
   rtems_build_name( 'M', 'A', 'N', ' '),
   rtems_build_name( 'B', 'A', 'S', ' '),
   rtems_build_name( 'C', 'O', 'R', ' '),
-  rtems_build_name( 'R', 'E', 'C', ' ')
+  rtems_build_name( 'R', 'E', 'C', ' '),
+  rtems_build_name( 'R', 'M', 'T', ' ')
 };
 
-static const rtems_task_priority Prio[] = { 9, 4, 4, 4 };
-//static rtems_id   Task_id[ 4 ];
+static const rtems_task_priority Prio[] = { 9, 4, 4, 4, 4 };
+
 static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
 
 /**
@@ -117,7 +118,10 @@ uint8_t fts_rtems_task_register_t(
   pattern_type pattern,
   uint8_t *pattern_start,
   uint8_t *pattern_end,
-  uint8_t max_bitpos
+  uint8_t max_bitpos,
+  rtems_task *basic,
+  rtems_task *detection,
+  rtems_task *recovery
 );
 
 /**

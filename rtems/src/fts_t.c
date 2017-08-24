@@ -70,15 +70,6 @@ int16_t task_in_list_t(
   return -1;
 }
 
-/* pointers to task versions */
-void set_p(rtems_id id, rtems_task *b, rtems_task *d, rtems_task *c)
-{
-  int16_t i = task_in_list_t(id);
-  list.b[i] = b;
-  list.d[i] = d;
-  list.c[i] = c;
-}
-
 /* Show the execution pattern in the console */
 uint8_t show_pattern_t(
   uint8_t *p_curr,
@@ -128,10 +119,10 @@ int8_t create_pattern_t(
   pattern_type pattern
 )
 {
-  printf("\nfts_t.c (create_pattern): in 1\n");
-  printf("\nfts_t.c (create_pattern): m is %i, k is %i\n", list.m[i], list.k[i]);
+  printf("\nfts_t.c (create_pattern):i is %i, m is %i, k is %i\n", i, list.m[i], list.k[i]);
 
-  uint8_t *pattern_it = list.pattern_start[i];
+  uint8_t *pattern_it;
+  pattern_it = list.pattern_start[i];
   /*
   * for details on E and R pattern, check
   * http://ieeexplore.ieee.org/document/1661621/
@@ -309,7 +300,10 @@ uint8_t fts_rtems_task_register_t(
   pattern_type pattern,
   uint8_t *pattern_start,
   uint8_t *pattern_end,
-  uint8_t max_bitpos
+  uint8_t max_bitpos,
+  rtems_task *basic,
+  rtems_task *detection,
+  rtems_task *recovery
 )
 {
   uint16_t i = list.task_list_index;
@@ -341,8 +335,13 @@ uint8_t fts_rtems_task_register_t(
     list.curr_pos[i] = pattern_start;
     list.max_bitpos[i] = max_bitpos;
     list.bitpos[i] = 0;
+
     uint8_t pa = create_pattern_t(i, pattern);
     printf("\nfts_t.c (register): Tech %i\n", list.task_list_tech[i]);
+
+    list.b[i] = basic;
+    list.d[i] = detection;
+    list.c[i] = recovery;
 
     list.task_list_index++;
 
