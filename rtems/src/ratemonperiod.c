@@ -112,6 +112,7 @@ static void _Rate_monotonic_Release_job(
     deadline,
     &queue_context
   );
+  /* I think here is best YY */
 
   _Rate_monotonic_Release( the_period, lock_context );
   _Thread_Priority_update( &queue_context );
@@ -136,6 +137,8 @@ void _Rate_monotonic_Restart(
     the_period->next_length,
     lock_context
   );
+  /* OR FTS Code here? */
+  /* YES I think so - M*/
 }
 
 static void _Rate_monotonic_Update_statistics(
@@ -326,7 +329,7 @@ rtems_status_code rtems_rate_monotonic_period(
   }
 
   //task which executes needs to be the owner which was set in create earlier
-  //if not own, then do stuff
+  //if not own, ...
   executing = _Thread_Executing;
   if ( executing != the_period->owner ) {
     _ISR_lock_ISR_enable( &lock_context );
@@ -381,7 +384,7 @@ rtems_status_code rtems_rate_monotonic_period(
           );
         }
         break;
-        //of inactive, activate immediately
+        //if inactive, activate immediately
       case RATE_MONOTONIC_INACTIVE:
         status = _Rate_monotonic_Activate(
           the_period,
