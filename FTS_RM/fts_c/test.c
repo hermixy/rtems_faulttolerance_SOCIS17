@@ -186,12 +186,17 @@ rtems_task FTS_MANAGER(
   printf("\nAddress of R: %p\n", (void *)recovery);
 
   /* create a period and register the task set for FTS */
-  status = rtems_rate_monotonic_create_fts( Task_name[ 4 ], &RM_period,
-  m, k, curr_tech, patt, p_s, p_e, 7, basic, detection, recovery);
-  task_status(status);
+   status = rtems_rate_monotonic_create_fts( Task_name[ 4 ], &RM_period,
+   m, k, curr_tech, patt, p_s, p_e, 7, basic, detection, recovery);
+   task_status(status);
+
+
 
   while (1)
   {
+    // status = rtems_rate_monotonic_get_status( RM_period, &period_status );
+    // task_status(status);
+    status = rtems_rate_monotonic_period( RM_period, 1000 );
 
     printf("\n*****************************\n");
     printf("\nFTS_RM_TEST starts!\n");
@@ -210,7 +215,23 @@ rtems_task FTS_MANAGER(
     }
     runs++;
     printf("\nFTS_RM_TEST ends!\n");
+    printf("\n*****************************\n");
+
+    if( status == RTEMS_TIMEOUT )
+    {
+      printf("\nPERIOD TIMEOUT\n");
+    }
   }
+  printf("\nBROKE\n");
+  status = rtems_rate_monotonic_delete( RM_period );
+  if ( status != RTEMS_SUCCESSFUL )
+  {
+      printf( "rtems_rate_monotonic_delete failed with status of %d.\n", status );
+      exit( 1 );
+  }
+  status = rtems_task_delete( selfid );    /* should not return */
+  printf( "rtems_task_delete returned with status of %d.\n", status );
+  exit( 1 );
 };
 
 
@@ -242,8 +263,7 @@ rtems_task Init(
 
 #include <bsp.h>
 
-/* NOTICE: the clock driver is explicitly disabled */
-#define CONFIGURE_APPLICATION_DOES_NOT_NEED_CLOCK_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_USE_DEVFS_AS_BASE_FILESYSTEM
 #define CONFIGURE_MICROSECONDS_PER_TICK     1000
