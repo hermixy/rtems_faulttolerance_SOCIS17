@@ -81,6 +81,8 @@ typedef struct {
   uint8_t k;
 } m_k;
 
+static uint32_t faults = 0; //nr of faults
+
 rtems_task BASIC_V();
 
 rtems_task DETECTION_V();
