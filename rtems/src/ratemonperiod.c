@@ -24,6 +24,8 @@
 #include <rtems/score/schedulerimpl.h>
 #include <rtems/score/todimpl.h>
 
+#include <rtems/rtems/fts_t.h>
+
 bool _Rate_monotonic_Get_status(
   const Rate_monotonic_Control *the_period,
   Timestamp_Control            *wall_since_last_period,
@@ -86,6 +88,7 @@ static void _Rate_monotonic_Release_postponed_job(
   _Rate_monotonic_Release( the_period, lock_context );
   _Thread_Priority_update( &queue_context );
   _Thread_Dispatch_enable( cpu_self );
+  fts_version ver = fts_compensate_t(the_period->Object.id);
 }
 
 static void _Rate_monotonic_Release_job(
@@ -117,6 +120,8 @@ static void _Rate_monotonic_Release_job(
   _Rate_monotonic_Release( the_period, lock_context );
   _Thread_Priority_update( &queue_context );
   _Thread_Dispatch_enable( cpu_self );
+
+  fts_version ver = fts_compensate_t(the_period->Object.id);
 }
 
 void _Rate_monotonic_Restart(

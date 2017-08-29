@@ -190,8 +190,6 @@ rtems_task FTS_MANAGER(
    m, k, curr_tech, patt, p_s, p_e, 7, basic, detection, recovery);
    task_status(status);
 
-
-
   while (1)
   {
     // status = rtems_rate_monotonic_get_status( RM_period, &period_status );
