@@ -29,7 +29,6 @@ uint8_t k = 16;
 
 /* set fault rate */
 uint8_t fault_rate = 20; //percent; fault per task
-uint32_t faults = 0; //nr of faults
 uint32_t maxruns = 16; //nr of maximum runs
 uint32_t runs = 1;
 fts_tech curr_tech = SRE;
@@ -194,7 +193,7 @@ rtems_task FTS_MANAGER(
   {
     // status = rtems_rate_monotonic_get_status( RM_period, &period_status );
     // task_status(status);
-    status = rtems_rate_monotonic_period( RM_period, 1000 );
+    status = rtems_rate_monotonic_period( RM_period, 100 );
 
     printf("\n*****************************\n");
     printf("\nFTS_RM_TEST starts!\n");

@@ -254,7 +254,7 @@ static fts_version static_next_version_t(
       {
         printf("\nfts_t.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
         status = rtems_task_create(Task_name[ 1 ], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
-           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]);
+          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]);
         task_status(status);
 
         status = rtems_task_start( Task_id[ 1 ], list.b[i], 0);
@@ -263,9 +263,9 @@ static fts_version static_next_version_t(
         return BASIC;
       }
       printf("\nfts_t.c (static_next_version):SRE RECOVERY, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-      status = rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+       status = rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]);
-      task_status(status);
+       task_status(status);
 
       status = rtems_task_start( Task_id[ 3 ], list.c[i], 0);
       task_status(status);
@@ -342,6 +342,8 @@ uint8_t fts_rtems_task_register_t(
     list.b[i] = basic;
     list.d[i] = detection;
     list.c[i] = recovery;
+    
+    rtems_status_code status;
 
     list.task_list_index++;
 
@@ -375,27 +377,27 @@ fts_version fts_compensate_t(
     {
       case NONE :
         next_version = BASIC;
-        printf("\nfts_t.c (comp): NONE\n");
+        //printf("\nfts_t.c (comp): NONE\n");
         break;
 
       case SRE :
         next_version = static_next_version_t(task_index);
-        printf("\nfts_t.c (comp): SRE\n");
+        //printf("\nfts_t.c (comp): SRE\n");
         break;
 
       case SDR :
         next_version = static_next_version_t(task_index);
-        printf("\nfts_t.c (comp): SDR\n");
+        //printf("\nfts_t.c (comp): SDR\n");
         break;
 
       case DRE :
         next_version = RECOVERY;
-        printf("\nfts_t.c (comp): DRE\n");
+        //printf("\nfts_t.c (comp): DRE\n");
         break;
 
       case DDR :
         next_version = RECOVERY;
-        printf("\nfts_t.c (comp): DDR\n");
+        //printf("\nfts_t.c (comp): DDR\n");
         break;
     }
   }

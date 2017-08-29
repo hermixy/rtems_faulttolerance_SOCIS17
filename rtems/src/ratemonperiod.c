@@ -23,7 +23,6 @@
 #include <rtems/rtems/ratemonimpl.h>
 #include <rtems/score/schedulerimpl.h>
 #include <rtems/score/todimpl.h>
-
 #include <rtems/rtems/fts_t.h>
 
 bool _Rate_monotonic_Get_status(
