@@ -52,17 +52,59 @@ pattern_type patt = R_PATTERN;
 uint8_t seed = 5;
 
 /* fault injection function */
-fault_status fault_injection(void)
+// fault_status fault_injection(void)
+// {
+//   if(fault_rate == 0)
+//   {
+//     return NO_FAULT;
+//   }
+//   /*generate a random number and return fault status 32767*/
+//   int random = rand() / (RAND_MAX / (100 + 1) + 1);
+//   printf("\nT: Random NR is %i\n", random);
+//
+//   if ( random <= fault_rate )
+//   {
+//     faults++;
+//     return FAULT;
+//   }
+//   else
+//   {
+//     return NO_FAULT;
+//   }
+// }
+
+/* fill array with random numbers */
+void rand_nr_list(void)
+{
+  for ( uint8_t i = 0; i < NR_RANDS; i++ )
+  {
+    rands_0_100[i] = rand() / (RAND_MAX / (100 + 1) + 1);
+  }
+  return;
+}
+
+/* get a random number out of the random number array */
+uint8_t get_rand(void)
+{//rand_count always indexes the random nr which was not used yet
+  return rands_0_100[rand_count++];
+}
+
+/* get fault status */
+fault_status get_fault(uint8_t rand_nr)
 {
   if(fault_rate == 0)
   {
     return NO_FAULT;
   }
-  /*generate a random number and return fault status 32767*/
-  int random = rand() / (RAND_MAX / (100 + 1) + 1);
-  printf("\nT: Random NR is %i\n", random);
 
-  if ( random <= fault_rate )
+  if (fault_rate == 100)
+  {
+    return FAULT;
+  }
+
+  printf("\nT: Random NR is %i\n", rand_nr);
+
+  if ( rand_nr <= fault_rate )
   {
     faults++;
     return FAULT;
@@ -70,6 +112,20 @@ fault_status fault_injection(void)
   else
   {
     return NO_FAULT;
+  }
+}
+
+/* display all random vals */
+void show_rands(void)
+{
+  printf("\nNr of rands: %i\n", NR_RANDS);
+  for (int i = 0; i < NR_RANDS; i++)
+  {
+    if (i == 0)
+    {
+      printf("\nRandom numbers:\n");
+    }
+    printf("%i\n", rands_0_100[i]);
   }
 }
 
@@ -83,7 +139,7 @@ rtems_task BASIC_V(
   rtems_id id = rtems_task_self();
   printf("\nBasic: My ID is %i\n", id);
 
-  fault_status fs_T1 = fault_injection();
+  fault_status fs_T1 = get_fault(get_rand());
 
   switch(fs_T1)
   {
@@ -112,7 +168,7 @@ rtems_task DETECTION_V(
   rtems_id id = rtems_task_self();
   printf("\nDetection: My ID is %i\n", id);
 
-  fault_status fs_T1 = fault_injection();
+  fault_status fs_T1 = get_fault(get_rand());
 
   switch(fs_T1)
   {
@@ -141,7 +197,7 @@ rtems_task CORRECTION_V(
   rtems_id id = rtems_task_self();
   printf("\nCorrection: My ID is %i\n", id);
 
-  fault_status fs_T1 = fault_injection();
+  fault_status fs_T1 = get_fault(get_rand());
 
   switch(fs_T1)
   {
@@ -169,7 +225,10 @@ rtems_task FTS_MANAGER(
   rtems_id                                   RM_period;
   rtems_id                                   selfid = rtems_task_self();
   rtems_rate_monotonic_period_status         period_status;
+
   srand(seed);
+  rand_nr_list();
+  show_rands();
 
   printf("\nAddress of S: %p\n", (void *)p_s);
   printf("\nAddress of E: %p\n", (void *)p_e);

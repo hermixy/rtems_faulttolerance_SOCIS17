@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define NR_RANDS 32
+
 /**
  * @brief The protection versions of a task
  *
@@ -104,6 +106,8 @@ static const rtems_task_priority Prio[] = { 9, 4, 4, 4, 4 };
 
 static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
 
+uint8_t rands_0_100[NR_RANDS];
+uint8_t rand_count; 
 /**
  * @brief Register task for protection
  *

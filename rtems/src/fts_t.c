@@ -55,7 +55,7 @@ void task_status(rtems_status_code s)
   return 0;
 }
 
-/* Check of a certain task is in the list */
+/* Check if a certain task is in the list */
 int16_t task_in_list_t(
   rtems_id id
 )
@@ -284,6 +284,8 @@ static fts_version static_next_version_t(
       }
       printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
       status = rtems_task_start( Task_id[ 2 ], list.d[i], 0);
+    // if fault, create and start rel. version
+    
       task_status(status);
       return DETECTION;
     }
