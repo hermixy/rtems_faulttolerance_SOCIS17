@@ -4,6 +4,9 @@
 #include <stdio.h>
 
 #define NR_RANDS 32
+// can protect up to P_TASK tasks
+#define P_TASKS 10
+#define BIT_7 128
 
 /**
  * @brief The protection versions of a task
@@ -83,13 +86,15 @@ typedef struct {
   uint8_t k;
 } m_k;
 
+uint8_t fault_flag[P_TASKS];
 static uint32_t faults = 0; //nr of faults
+rtems_id *period_pointers[P_TASKS];
 
-rtems_task BASIC_V();
+rtems_task BASIC_V(rtems_task_argument argument);
 
-rtems_task DETECTION_V();
+rtems_task DETECTION_V(rtems_task_argument argument);
 
-rtems_task CORRECTION_V();
+rtems_task CORRECTION_V(rtems_task_argument argument);
 
 static rtems_id   Task_id[ 5 ];
 
@@ -104,10 +109,10 @@ static const rtems_name Task_name[] = {
 
 static const rtems_task_priority Prio[] = { 9, 4, 4, 4, 4 };
 
-static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
+
 
 uint8_t rands_0_100[NR_RANDS];
-uint8_t rand_count; 
+uint8_t rand_count;
 /**
  * @brief Register task for protection
  *
@@ -117,7 +122,7 @@ uint8_t rand_count;
  *1
  */
 uint8_t fts_rtems_task_register_t(
-  rtems_id id, //id of the "main" task
+  rtems_id *id, //id of the "main" task
   uint8_t m,
   uint8_t k,
   fts_tech tech,

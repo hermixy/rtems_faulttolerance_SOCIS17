@@ -156,7 +156,7 @@ rtems_status_code rtems_rate_monotonic_create_fts(
 
   /* SET STUFF FOR FTS */
   uint8_t reg = fts_rtems_task_register_t(
-  *id, //id of the period. // in threadq.h, the struct of the TCB is defined
+  id, //id of the period. // in threadq.h, the struct of the TCB is defined
   m,
   k,
   tech,

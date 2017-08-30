@@ -1,9 +1,4 @@
 #include <rtems/rtems/fts_t.h>
-
-// can protect up to P_TASK tasks
-#define P_TASKS 10
-#define BIT_7 128
-
 // data structure
 // list of task IDs
 struct Task_ID_List {
@@ -26,7 +21,6 @@ struct Task_ID_List {
   rtems_task    *d[P_TASKS];
   rtems_task    *c[P_TASKS];
 } list;
-
 
 void task_status(rtems_status_code s)
 {
@@ -69,6 +63,17 @@ int16_t task_in_list_t(
   }
   return -1;
 }
+/* call when error detected */
+void fault_detected(rtems_id id)
+{
+  uint16_t i = task_in_list_t(id);
+  if (i != -1)
+  {
+    fault_flag[i] = 1;
+  }
+  return;
+}
+
 
 /* Show the execution pattern in the console */
 uint8_t show_pattern_t(
@@ -257,7 +262,7 @@ static fts_version static_next_version_t(
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]);
         task_status(status);
 
-        status = rtems_task_start( Task_id[ 1 ], list.b[i], 0);
+        status = rtems_task_start( Task_id[ 1 ], list.b[i], period_pointers[i]);
         task_status(status);
 
         return BASIC;
@@ -267,7 +272,7 @@ static fts_version static_next_version_t(
          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]);
        task_status(status);
 
-      status = rtems_task_start( Task_id[ 3 ], list.c[i], 0);
+      status = rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]);
       task_status(status);
 
       return RECOVERY;
@@ -277,16 +282,37 @@ static fts_version static_next_version_t(
       if (result_bit == 0)
       {
         printf("\nfts_t.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-        printf("BASIC POINTER CAUSE PR\n");
-        status = rtems_task_start( Task_id[ 1 ], list.b[i], 0);
+
+        status = rtems_task_create(Task_name[ 1 ], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
+          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]);
+        task_status(status);
+
+        status = rtems_task_start( Task_id[ 1 ], list.b[i], period_pointers[i]);
         task_status(status);
         return BASIC;
       }
       printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-      status = rtems_task_start( Task_id[ 2 ], list.d[i], 0);
-    // if fault, create and start rel. version
-    
+
+      status = rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
+        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]);
       task_status(status);
+
+      status = rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[i]);
+    // if fault, create and start rel. version
+    // argument is id of period
+      if (fault_flag[i] == 1)
+      {
+        printf("\nfts_t.c (static_next_version): Recovering from fault.");
+
+        status = rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]);
+        task_status(status);
+
+        status = rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]);
+        task_status(status);
+        return RECOVERY;
+      }
+
       return DETECTION;
     }
     //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
@@ -295,7 +321,7 @@ static fts_version static_next_version_t(
 /***/
 
 uint8_t fts_rtems_task_register_t(
-  rtems_id id, //id of the "main" task
+  rtems_id *id, //id of the "main" task
   uint8_t m,
   uint8_t k,
   fts_tech tech,
@@ -309,11 +335,11 @@ uint8_t fts_rtems_task_register_t(
 )
 {
   uint16_t i = list.task_list_index;
-  if ((i < P_TASKS) && (task_in_list_t(id) == -1) && (m <= k) )
+  if ((i < P_TASKS) && (task_in_list_t((*id)) == -1) && (m <= k) )
   {
     /* Put all information in the tasklist */
     // store ID
-    list.task_list_id[i] = id;
+    list.task_list_id[i] = *id;
     //output
     printf("\nfts_t.c (register): ID %i\n", list.task_list_id[i]);
     // store (m,k)
@@ -344,8 +370,9 @@ uint8_t fts_rtems_task_register_t(
     list.b[i] = basic;
     list.d[i] = detection;
     list.c[i] = recovery;
-    
-    rtems_status_code status;
+
+    fault_flag[i] = 0;
+    period_pointers[i] = id;
 
     list.task_list_index++;
 

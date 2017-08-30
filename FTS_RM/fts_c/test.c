@@ -28,11 +28,13 @@ uint8_t m = 12;
 uint8_t k = 16;
 
 /* set fault rate */
-uint8_t fault_rate = 20; //percent; fault per task
+uint8_t fault_rate = 100; //percent; fault per task
 uint32_t maxruns = 16; //nr of maximum runs
 uint32_t runs = 1;
-fts_tech curr_tech = SRE;
+fts_tech curr_tech = SDR;
 pattern_type patt = R_PATTERN;
+
+static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
 /* MOVED TO FTS_T.H */
 
 // static const uint32_t Periods[] = { 1000, 1000, 1000, 1000 };
@@ -131,13 +133,15 @@ void show_rands(void)
 
 /* basic version task */
 rtems_task BASIC_V(
-  rtems_task_argument unused
+  rtems_task_argument argument
 )
 {
   printf("\n------------------------\n");
   printf("\nBasic version starts!\n");
   rtems_id id = rtems_task_self();
   printf("\nBasic: My ID is %i\n", id);
+  id = *((rtems_id*)argument );
+  printf("Basic: ID of my Period is %i\n", id);
 
   fault_status fs_T1 = get_fault(get_rand());
 
@@ -160,13 +164,15 @@ rtems_task BASIC_V(
 
 /* Detection task version */
 rtems_task DETECTION_V(
-  rtems_task_argument unused
+  rtems_task_argument argument
 )
 {
   printf("\n------------------------\n");
   printf("\nDetection version starts!\n");
   rtems_id id = rtems_task_self();
   printf("\nDetection: My ID is %i\n", id);
+  id = *((rtems_id*)argument );
+  printf("Detection: ID of my Period is %i\n", id);
 
   fault_status fs_T1 = get_fault(get_rand());
 
@@ -174,6 +180,7 @@ rtems_task DETECTION_V(
   {
     case FAULT :
       printf("\n***T1: A fault occurred!***\n");
+      fault_detected(id);
       break;
 
     case NO_FAULT :
@@ -189,13 +196,15 @@ rtems_task DETECTION_V(
 
 /* correction task version */
 rtems_task CORRECTION_V(
-  rtems_task_argument unused
+  rtems_task_argument argument
 )
 {
   printf("\n------------------------\n");
   printf("\nCorrection version starts!\n");
   rtems_id id = rtems_task_self();
   printf("\nCorrection: My ID is %i\n", id);
+  id = *((rtems_id*)argument );
+  printf("Basic: ID of my Period is %i\n", id);
 
   fault_status fs_T1 = get_fault(get_rand());
 
