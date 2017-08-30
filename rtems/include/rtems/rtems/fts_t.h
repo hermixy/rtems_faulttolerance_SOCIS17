@@ -87,7 +87,7 @@ typedef struct {
 } m_k;
 
 uint8_t fault_flag[P_TASKS];
-static uint32_t faults = 0; //nr of faults
+uint32_t faults; //nr of faults
 rtems_id *period_pointers[P_TASKS];
 
 rtems_task BASIC_V(rtems_task_argument argument);

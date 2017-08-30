@@ -101,10 +101,11 @@ fault_status get_fault(uint8_t rand_nr)
 
   if (fault_rate == 100)
   {
+    faults++;
     return FAULT;
   }
 
-  printf("\nT: Random NR is %i\n", rand_nr);
+  printf("\nRandom NR is %i\n", rand_nr);
 
   if ( rand_nr <= fault_rate )
   {
@@ -148,11 +149,11 @@ rtems_task BASIC_V(
   switch(fs_T1)
   {
     case FAULT :
-      printf("\n***T1: A fault occurred!***\n");
+      printf("\n***B: A fault occurred!***\n");
       break;
 
     case NO_FAULT :
-      printf("\nT1: No fault\n");
+      printf("\nB: No fault\n");
       break;
   }
 
@@ -179,12 +180,12 @@ rtems_task DETECTION_V(
   switch(fs_T1)
   {
     case FAULT :
-      printf("\n***T1: A fault occurred!***\n");
+      printf("\n***D: A fault occurred!***\n");
       fault_detected(id);
       break;
 
     case NO_FAULT :
-      printf("\nT1: No fault\n");
+      printf("\nD: No fault\n");
       break;
   }
 
@@ -204,18 +205,18 @@ rtems_task CORRECTION_V(
   rtems_id id = rtems_task_self();
   printf("\nCorrection: My ID is %i\n", id);
   id = *((rtems_id*)argument );
-  printf("Basic: ID of my Period is %i\n", id);
+  printf("Correction: ID of my Period is %i\n", id);
 
   fault_status fs_T1 = get_fault(get_rand());
 
   switch(fs_T1)
   {
     case FAULT :
-      printf("\n***T1: A fault occurred!***\n");
+      printf("\n***C: A fault occurred!***\n");
       break;
 
     case NO_FAULT :
-      printf("\nT1: No fault\n");
+      printf("\nC: No fault\n");
       break;
   }
 
@@ -235,6 +236,7 @@ rtems_task FTS_MANAGER(
   rtems_id                                   selfid = rtems_task_self();
   rtems_rate_monotonic_period_status         period_status;
 
+  faults = 0;
   srand(seed);
   rand_nr_list();
   show_rands();

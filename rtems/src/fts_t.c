@@ -67,11 +67,8 @@ int16_t task_in_list_t(
 void fault_detected(rtems_id id)
 {
   uint16_t i = task_in_list_t(id);
-  if (i != -1)
-  {
-    fault_flag[i] = 1;
-  }
-  return;
+  printf("\nFDETECT: i is %i\n", i );
+  fault_flag[i] = 0;
 }
 
 
@@ -283,42 +280,53 @@ static fts_version static_next_version_t(
       {
         printf("\nfts_t.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
 
-        status = rtems_task_create(Task_name[ 1 ], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
-          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]);
-        task_status(status);
+        task_status( rtems_task_create(Task_name[ 1 ], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
+          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]) );
 
-        status = rtems_task_start( Task_id[ 1 ], list.b[i], period_pointers[i]);
-        task_status(status);
+        task_status( rtems_task_start( Task_id[ 1 ], list.b[i], period_pointers[i]) );
         return BASIC;
       }
-      printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-
-      status = rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
-        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]);
-      task_status(status);
-
-      status = rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[i]);
-    // if fault, create and start rel. version
-    // argument is id of period
-      if (fault_flag[i] == 1)
+      else // bit is 1
       {
-        printf("\nfts_t.c (static_next_version): Recovering from fault.");
+        printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+        //start a detection version
 
-        status = rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
-          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]);
-        task_status(status);
+        //maybe lock fault flag
+        task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
+          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
 
-        status = rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]);
-        task_status(status);
-        return RECOVERY;
+        task_status(rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[i]));
+        // if fault, create and start rel. version
+        // argument is id of period
+
+        // wait for new task to conclude ?
+        printf("\nFAULTFLAG: %i\n", fault_flag[i]);
+
+        if (fault_flag[i] == 0) //there was  a fault
+        {
+
+          printf("\nfts_t.c (static_next_version): Recovering from fault.");
+
+          task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
+
+          task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
+          fault_flag[i] = 1;
+          return RECOVERY;
+        }
+        return DETECTION;
       }
-
-      return DETECTION;
-    }
     //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
+    }
 }
-
 /***/
+
+fts_version dynamic_next_version_t(
+  int i
+)
+{
+  return RECOVERY;
+}
 
 uint8_t fts_rtems_task_register_t(
   rtems_id *id, //id of the "main" task
@@ -371,7 +379,7 @@ uint8_t fts_rtems_task_register_t(
     list.d[i] = detection;
     list.c[i] = recovery;
 
-    fault_flag[i] = 0;
+    fault_flag[i] = 1;
     period_pointers[i] = id;
 
     list.task_list_index++;
