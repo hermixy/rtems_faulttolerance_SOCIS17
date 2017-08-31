@@ -67,8 +67,12 @@ int16_t task_in_list_t(
 void fault_detected(rtems_id id)
 {
   uint16_t i = task_in_list_t(id);
-  printf("\nFDETECT: i is %i\n", i );
-  fault_flag[i] = 0;
+  printf("\nRECOVERING FROM FAULT: i is %i\n", i );
+
+  task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+    RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
+
+  task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
 }
 
 
@@ -301,19 +305,6 @@ static fts_version static_next_version_t(
 
         // wait for new task to conclude ?
         printf("\nFAULTFLAG: %i\n", fault_flag[i]);
-
-        if (fault_flag[i] == 0) //there was  a fault
-        {
-
-          printf("\nfts_t.c (static_next_version): Recovering from fault.");
-
-          task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
-
-          task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
-          fault_flag[i] = 1;
-          return RECOVERY;
-        }
         return DETECTION;
       }
     //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)

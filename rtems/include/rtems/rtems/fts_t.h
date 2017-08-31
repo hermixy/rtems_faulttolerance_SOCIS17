@@ -107,8 +107,7 @@ static const rtems_name Task_name[] = {
   rtems_build_name( 'R', 'M', 'T', ' ')
 };
 
-static const rtems_task_priority Prio[] = { 9, 4, 4, 4, 4 };
-
+static const rtems_task_priority Prio[] = { 3, 2, 2, 1, 1 };
 
 
 uint8_t rands_0_100[NR_RANDS];
