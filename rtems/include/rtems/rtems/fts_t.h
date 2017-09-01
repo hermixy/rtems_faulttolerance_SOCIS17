@@ -76,6 +76,19 @@ typedef enum {
 } error_status;
 
 /**
+ * @brief mode indicator for dynamic compensation
+ *
+ * When set to TOLERANT, then the system can still tolerate errors
+ * When set to SAFE, the system can not tolerante any more errors
+ * and the correntness of the following instances needs to be guaranteed
+ */
+typedef enum {
+  TOLERANT,
+  SAFE
+} mode_indicator;
+
+
+/**
  * @brief (m,k) constaint of a task
  *
  * For a detailed description of (m,k) refer to:
@@ -89,6 +102,11 @@ typedef struct {
 uint8_t fault_flag[P_TASKS];
 uint32_t faults; //nr of faults
 rtems_id *period_pointers[P_TASKS];
+
+/* Dynamic compensation specific data */
+//just R-pattern for now
+uint16_t o_tolc[P_TASKS]; //nr of unrel instances (chances)
+uint16_t a_tolc[P_TASKS]; //nr of rel instances
 
 rtems_task BASIC_V(rtems_task_argument argument);
 

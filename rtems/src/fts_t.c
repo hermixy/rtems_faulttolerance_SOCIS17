@@ -63,16 +63,43 @@ int16_t task_in_list_t(
   }
   return -1;
 }
+
 /* call when error detected */
 void fault_detected(rtems_id id)
 {
   uint16_t i = task_in_list_t(id);
   printf("\nRECOVERING FROM FAULT: i is %i\n", i );
 
-  task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
-    RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
+  switch (list.task_list_tech[i])
+  {
+    case SDR:
+      task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
-  task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
+        task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
+    break;
+
+    case DRE:
+      if (o_tolc[i] > 0)
+      {
+        o_tolc[i]--;
+      }
+      else
+      {
+        task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
+
+        task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
+      }
+    break;
+
+    case DDR:
+      ;
+    break;
+
+
+  }
+  return;
 }
 
 
@@ -294,8 +321,6 @@ static fts_version static_next_version_t(
       {
         printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
         //start a detection version
-
-        //maybe lock fault flag
         task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
 
@@ -316,7 +341,50 @@ fts_version dynamic_next_version_t(
   int i
 )
 {
-  return RECOVERY;
+      printf("\nfts.c (dynamic_next_version):  index is %i\n", i);
+      printf("\nIn dynamic_next_version:");
+
+      show_pattern_t(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
+
+      //DRE or DDR, E or R pattern
+      fts_tech tech = list.task_list_tech[i];
+      pattern_type pattern = list.pattern[i];
+
+      rtems_status_code status;
+
+      if (o_tolc > 0)
+      {
+        task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
+          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
+
+        task_status(rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[i]));
+
+        return DETECTION;
+        // when fault, decrement o_tolc
+      }
+      else // tolerance counter depleted, only execute RE a times (or DET again)
+      {
+        if(tech == DRE)
+        {
+          task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
+
+          task_status(rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]));
+          return RECOVERY;
+        }
+        else // DDR
+        {
+          task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
+
+          task_status(rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[i]));
+
+          return DETECTION;
+        }
+      }
+  //check if tolerance counter depleted
+  //if not depleted, execute detection version
+  //
 }
 
 uint8_t fts_rtems_task_register_t(
