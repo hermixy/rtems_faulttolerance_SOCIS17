@@ -144,30 +144,14 @@ void fault_detected(rtems_id id)
       }
       else
       {
-        if (fault_flag[i] == 0) // if already gave a try with det. version
-        {
+
+
           task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
           task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[3]) );
-          //finish error correction
-          fault_flag[i] == 1;
-        }
-        else // if not given try yet, give a try with detection version
-        {
-          fault_flag[i] = 0; //set flag, gave a try
 
-          task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
-          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
-
-          task_status( rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[2]) );
-
-          while(fault_flag[i] == 0)
-          {
-            printf("\nwaiting...\n");
-          }
           printf("CONCLUDED DDR RECOVERY");
-        }
       }
     break;
 
@@ -448,6 +432,7 @@ fts_version dynamic_next_version_t(
         }
         else // DDR
         {
+          //although tolerance counter depleted, still give  try
           task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
 
