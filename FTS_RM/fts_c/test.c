@@ -28,7 +28,7 @@ uint8_t m = 12;
 uint8_t k = 16;
 
 /* set fault rate */
-uint8_t fault_rate = 100; //percent; fault per task
+uint8_t fault_rate = 50; //percent; fault per task
 uint32_t maxruns = 16; //nr of maximum runs
 uint32_t runs = 1;
 fts_tech curr_tech = DRE;

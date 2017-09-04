@@ -121,11 +121,13 @@ void fault_detected(rtems_id id)
     case DRE:
       if (o_tolc[i] > 0)
       {
+        printf("\n DETECT ROUTINE DRE: Tolerance Counter: %i\n", o_tolc[i]);
         // fault detected, so decrease tol counter
         o_tolc[i]--;
       }
       else // if tol counter is 0, release rel version
       {
+          printf("\n DETECT ROUTINE DRE: Tolerance Counter: %i\n", o_tolc[i]);
         task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
@@ -136,6 +138,7 @@ void fault_detected(rtems_id id)
     case DDR:
       if (o_tolc[i] > 0)
       {
+        printf("\n DETECT ROUTINE DDR: Tolerance Counter: %i\n", o_tolc[i]);
         // fault detected, so decrease tol counter
         o_tolc[i]--;
       }
@@ -152,15 +155,21 @@ void fault_detected(rtems_id id)
         }
         else // if not given try yet, give a try with detection version
         {
-          fault_flag[i] = 0; //set flag, already gave a try
+          fault_flag[i] = 0; //set flag, gave a try
+
           task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
 
           task_status( rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[2]) );
+
+          while(fault_flag[i] == 0)
+          {
+            printf("\nwaiting...\n");
+          }
+          printf("CONCLUDED DDR RECOVERY");
         }
       }
     break;
-
 
   }
   return;
@@ -415,8 +424,9 @@ fts_version dynamic_next_version_t(
 
       rtems_status_code status;
 
-      if (o_tolc > 0)
+      if (o_tolc[i] > 0)
       {
+        printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", o_tolc[i]);
         task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
 
@@ -429,6 +439,7 @@ fts_version dynamic_next_version_t(
       {
         if(tech == DRE)
         {
+          printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", o_tolc[i]);
           task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
@@ -559,12 +570,12 @@ fts_version fts_compensate_t(
         break;
 
       case DRE :
-        next_version = RECOVERY;
+        next_version = dynamic_next_version_t(task_index);
         //printf("\nfts_t.c (comp): DRE\n");
         break;
 
       case DDR :
-        next_version = RECOVERY;
+        next_version =  dynamic_next_version_t(task_index);
         //printf("\nfts_t.c (comp): DDR\n");
         break;
     }
