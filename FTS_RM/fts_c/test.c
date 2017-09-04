@@ -29,9 +29,9 @@ uint8_t k = 16;
 
 /* set fault rate */
 uint8_t fault_rate = 100; //percent; fault per task
-uint32_t maxruns = 16; //nr of maximum runs
+uint32_t maxruns = 32; //nr of maximum runs
 uint32_t runs = 1;
-fts_tech curr_tech = DDR;
+fts_tech curr_tech = DRE;
 pattern_type patt = R_PATTERN;
 
 static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
@@ -181,13 +181,14 @@ rtems_task DETECTION_V(
   {
     case FAULT :
       printf("\n***D: A fault occurred!***\n");
-      fault_detected(id);
       break;
 
     case NO_FAULT :
       printf("\nD: No fault\n");
       break;
   }
+
+  fault_detection_routine(id, fs_T1);
 
   printf("\nDetection version ends!\n");
   printf("\n------------------------\n");

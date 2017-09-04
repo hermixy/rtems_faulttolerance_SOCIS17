@@ -326,6 +326,14 @@ rtems_status_code rtems_rate_monotonic_period(
   rtems_status_code                  status;
   rtems_rate_monotonic_period_states state;
 
+  // FIX THIS TODO
+  //if R pattern and DRE/DDR
+  if (a_tolc[0] == 0)
+  {
+    tolc_update_R(0);
+    printf("\nTOLERANCE COUNTERS UPDATED\n");
+  }
+
   //check if period has valid ID
   the_period = _Rate_monotonic_Get( id, &lock_context );
   if ( the_period == NULL ) {

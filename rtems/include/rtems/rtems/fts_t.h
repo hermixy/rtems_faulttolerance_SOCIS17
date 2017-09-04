@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define NR_RANDS 32
+#define NR_RANDS 128
 // can protect up to P_TASK tasks
 #define P_TASKS 10
 #define BIT_7 128
@@ -99,12 +99,17 @@ typedef struct {
   uint8_t k;
 } m_k;
 
-uint8_t fault_flag[P_TASKS];
+rtems_id main_id[P_TASKS];
+
+uint8_t flag[P_TASKS];
 uint32_t faults; //nr of faults
 rtems_id *period_pointers[P_TASKS];
 
 /* Dynamic compensation specific data */
 //just R-pattern for now
+uint16_t o[P_TASKS]; //nr of unrel instances (chances)
+uint16_t a[P_TASKS]; //nr of rel instances
+
 uint16_t o_tolc[P_TASKS]; //nr of unrel instances (chances)
 uint16_t a_tolc[P_TASKS]; //nr of rel instances
 
@@ -125,8 +130,7 @@ static const rtems_name Task_name[] = {
   rtems_build_name( 'R', 'M', 'T', ' ')
 };
 
-static const rtems_task_priority Prio[] = { 3, 2, 2, 1, 0 };
-
+static const rtems_task_priority Prio[] = { 2, 1, 1, 1, 0 };
 
 uint8_t rands_0_100[NR_RANDS];
 uint8_t rand_count;
@@ -138,6 +142,11 @@ uint8_t rand_count;
  *
  *1
  */
+
+ void tolc_update_R(
+   int i
+ );
+
 uint8_t fts_rtems_task_register_t(
   rtems_id *id, //id of the "main" task
   uint8_t m,
@@ -198,4 +207,8 @@ int8_t create_pattern_t(
 uint8_t fts_change_tech_t(
   rtems_id id,
   fts_tech tech
+);
+
+int16_t task_in_list_t(
+  rtems_id id
 );
