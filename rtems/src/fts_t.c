@@ -22,6 +22,15 @@ struct Task_ID_List {
   rtems_task    *c[P_TASKS];
 } list;
 
+// void release_task(int list_index, int task_i ) // list_index: in list object, task_i: versions
+// {
+//   task_status( rtems_task_create(Task_name[task_i], Prio[task_i], RTEMS_MINIMUM_STACK_SIZE,
+//   RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ task_i ]) );
+//
+//   task_status( rtems_task_start( Task_id[task_i], list.c[list_index], period_pointers[list_index]) );
+//   return;
+// }
+
 void task_status(rtems_status_code s)
 {
   switch(s)
@@ -73,7 +82,7 @@ void fault_detected(rtems_id id)
   switch (list.task_list_tech[i])
   {
     case SDR:
-      task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+        task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
         task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
@@ -82,9 +91,10 @@ void fault_detected(rtems_id id)
     case DRE:
       if (o_tolc[i] > 0)
       {
+        // fault detected, so decrease tol counter
         o_tolc[i]--;
       }
-      else
+      else // if tol counter is 0, release rel version
       {
         task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
@@ -94,7 +104,31 @@ void fault_detected(rtems_id id)
     break;
 
     case DDR:
-      ;
+      if (o_tolc[i] > 0)
+      {
+        // fault detected, so decrease tol counter
+        o_tolc[i]--;
+      }
+      else
+      {
+        if (fault_flag[i] == 0) // if already gave a try with det. version
+        {
+          task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
+          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
+
+          task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[3]) );
+          //finish error correction
+          fault_flag[i] == 1;
+        }
+        else // if not given try yet, give a try with detection version
+        {
+          fault_flag[i] = 0; //set flag, already gave a try
+          task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
+          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
+
+          task_status( rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[2]) );
+        }
+      }
     break;
 
 
@@ -329,7 +363,6 @@ static fts_version static_next_version_t(
         // argument is id of period
 
         // wait for new task to conclude ?
-        printf("\nFAULTFLAG: %i\n", fault_flag[i]);
         return DETECTION;
       }
     //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
