@@ -31,6 +31,36 @@ struct Task_ID_List {
 //   return;
 // }
 
+/* sets the tolerance counters */
+void tol_counter_set_R(int i, uint8_t *start, uint8_t *end, uint8_t maxbit )
+{
+  uint8_t *it = start;
+  for ( ;it <= end; it++ )
+  {
+    uint8_t bmask = BIT_7;
+
+    for( uint8_t j = 0; j <= 7; j++ )
+    {
+      if ( (j > maxbit) && (it == end) )
+      {
+        break;
+      }
+
+      if( ( (*it) & bmask) == 0 ) // count "0"s
+      {
+        o_tolc[i]++;
+      }
+      else // count the "1"s
+      {
+        a_tolc[i]++;
+      }
+      bmask >>= 1;
+    }
+
+  }
+  return;
+}
+
 void task_status(rtems_status_code s)
 {
   switch(s)
@@ -467,10 +497,19 @@ uint8_t fts_rtems_task_register_t(
     uint8_t pa = create_pattern_t(i, pattern);
     printf("\nfts_t.c (register): Tech %i\n", list.task_list_tech[i]);
 
+    /*set tolerance counters if R pattern and dynamic */
+    if ( ( list.pattern[i] == R_PATTERN ) && ( (list.task_list_tech[i] == DRE) || (list.task_list_tech[i] == DDR) ) )
+    {
+      tol_counter_set_R(i, pattern_start, pattern_end, max_bitpos);
+    }
+
+    printf("\nfts_t.c (register): o: %i, a: %i\n", o_tolc[i], a_tolc[i]);
+
     list.b[i] = basic;
     list.d[i] = detection;
     list.c[i] = recovery;
 
+    //initialize flag for DDR detection
     fault_flag[i] = 1;
     period_pointers[i] = id;
 

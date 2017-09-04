@@ -31,8 +31,8 @@ uint8_t k = 16;
 uint8_t fault_rate = 100; //percent; fault per task
 uint32_t maxruns = 16; //nr of maximum runs
 uint32_t runs = 1;
-fts_tech curr_tech = SDR;
-pattern_type patt = E_PATTERN;
+fts_tech curr_tech = DRE;
+pattern_type patt = R_PATTERN;
 
 static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
 /* MOVED TO FTS_T.H */
