@@ -326,20 +326,32 @@ rtems_status_code rtems_rate_monotonic_period(
   rtems_status_code                  status;
   rtems_rate_monotonic_period_states state;
 
-  // FIX THIS TODO
-  //if R pattern and DRE/DDR
-  if (a_tolc[0] == 0)
-  {
-    tolc_update_R(0);
-    printf("\nTOLERANCE COUNTERS UPDATED\n");
-  }
-
   //check if period has valid ID
   the_period = _Rate_monotonic_Get( id, &lock_context );
   if ( the_period == NULL ) {
     return RTEMS_INVALID_ID;
   }
 
+  //replenish tol. counters
+  //if R pattern and DRE/DDR
+  int16_t i = task_in_list_t(the_period->Object.id);
+  if( (i != -1) && ( (list.task_list_tech[i] == DRE) || (list.task_list_tech[i] == DDR) )  )
+  {
+    //if a in last partition is 0
+      if ( ((tol_count_e[i]).a_e[part_index[i]]) == 0)
+      {
+        if ( (nr_part[i] == part_index[i]) && (tol_count_e[i].a_e[nr_part[i]] == 0) )
+        {
+          tolc_update(i);
+          printf("\nTOLERANCE COUNTER was at end for index %i, UPDATED\n", i);
+        }
+        else // not at last partition
+        {
+          printf("\nNEXT PARTITION\n");
+          part_index[i]++;
+        }
+      }
+  }
   //task which executes needs to be the owner which was set in create earlier
   //if not own, ...
   executing = _Thread_Executing;

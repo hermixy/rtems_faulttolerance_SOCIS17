@@ -7,6 +7,8 @@
 // can protect up to P_TASK tasks
 #define P_TASKS 10
 #define BIT_7 128
+#define PATTERN_PARTITIONS 16
+//if only R-patterns used, set to 1
 
 /**
  * @brief The protection versions of a task
@@ -99,6 +101,27 @@ typedef struct {
   uint8_t k;
 } m_k;
 
+struct Task_ID_List {
+  rtems_id       task_list_id[P_TASKS];
+  uint8_t        m[P_TASKS];
+  uint8_t        k[P_TASKS];
+  fts_tech       task_list_tech[P_TASKS];
+  uint16_t       task_list_index; //always is one position ahead of last filled
+
+  /* Pattern specific data */
+  pattern_type   pattern[P_TASKS];
+  uint8_t   	  *pattern_start[P_TASKS];
+  uint8_t       *pattern_end[P_TASKS];
+  uint8_t	      *curr_pos[P_TASKS];
+  uint8_t 	     bitpos[P_TASKS];
+  uint8_t        max_bitpos[P_TASKS];
+
+  /* Versions */
+  rtems_task    *b[P_TASKS];
+  rtems_task    *d[P_TASKS];
+  rtems_task    *c[P_TASKS];
+} list;
+
 rtems_id main_id[P_TASKS];
 
 uint8_t flag[P_TASKS];
@@ -107,11 +130,22 @@ rtems_id *period_pointers[P_TASKS];
 
 /* Dynamic compensation specific data */
 //just R-pattern for now
-uint16_t o[P_TASKS]; //nr of unrel instances (chances)
-uint16_t a[P_TASKS]; //nr of rel instances
+// uint16_t o[P_TASKS]; //(never changes after being set) nr of unrel instances (chances)
+// uint16_t a[P_TASKS]; //(never changes after being set) nr of rel instances
+//
+// uint16_t o_tolc[P_TASKS]; //nr of unrel instances (chances)
+// uint16_t a_tolc[P_TASKS]; //nr of rel instances
 
-uint16_t o_tolc[P_TASKS]; //nr of unrel instances (chances)
-uint16_t a_tolc[P_TASKS]; //nr of rel instances
+//E-pattern stuff
+typedef struct TOL_C_E {
+  uint16_t o_e[PATTERN_PARTITIONS];
+  uint16_t a_e[PATTERN_PARTITIONS];
+} tolc_e;
+
+tolc_e tol_e[P_TASKS]; // never changing
+tolc_e tol_count_e[P_TASKS]; // counters
+uint16_t nr_part[P_TASKS]; //number of partitions in the end after setting
+uint16_t part_index[P_TASKS];
 
 rtems_task BASIC_V(rtems_task_argument argument);
 
@@ -144,6 +178,10 @@ uint8_t rand_count;
  */
 
  void tolc_update_R(
+   int i
+ );
+
+ void tolc_update_E(
    int i
  );
 

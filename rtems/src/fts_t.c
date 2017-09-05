@@ -1,26 +1,6 @@
 #include <rtems/rtems/fts_t.h>
 // data structure
 // list of task IDs
-struct Task_ID_List {
-  rtems_id       task_list_id[P_TASKS];
-  uint8_t        m[P_TASKS];
-  uint8_t        k[P_TASKS];
-  fts_tech       task_list_tech[P_TASKS];
-  uint16_t       task_list_index; //always is one position ahead of last filled
-
-  /* Pattern specific data */
-  pattern_type   pattern[P_TASKS];
-  uint8_t   	  *pattern_start[P_TASKS];
-  uint8_t       *pattern_end[P_TASKS];
-  uint8_t	      *curr_pos[P_TASKS];
-  uint8_t 	     bitpos[P_TASKS];
-  uint8_t        max_bitpos[P_TASKS];
-
-  /* Versions */
-  rtems_task    *b[P_TASKS];
-  rtems_task    *d[P_TASKS];
-  rtems_task    *c[P_TASKS];
-} list;
 
 // void release_task(int list_index, int task_i ) // list_index: in list object, task_i: versions
 // {
@@ -30,34 +10,113 @@ struct Task_ID_List {
 //   task_status( rtems_task_start( Task_id[task_i], list.c[list_index], period_pointers[list_index]) );
 //   return;
 // }
+void partitions_print(int i)
+{
+    printf("\nfts_t.c (partition print):\n");
+    //print tolerance counters
+    uint8_t m = 0;
+    uint16_t out;
+    printf("  o:");
+    for(; m <= nr_part[i]; m++ )
+    {
+      out = tol_e[i].o_e[m];
+      printf("%i ", out );
+    }
+    printf("\n\n  a:");
+    m = 0;
+    for(; m <= nr_part[i]; m++ )
+    {
+      out = tol_e[i].a_e[m];
+      printf("%i ", out);
+    }
+    return;
+}
 
-/* sets the tolerance counters */
-void tol_counter_set_R(int i, uint8_t *start, uint8_t *end, uint8_t maxbit )
+void tol_counter_set(int i, uint8_t *start, uint8_t *end, uint8_t maxbit)
 {
   uint8_t *it = start;
+  uint8_t last_bit = 0;
+  uint8_t partition = 0;
+
   for ( ;it <= end; it++ )
   {
     uint8_t bmask = BIT_7;
 
-    for( uint8_t j = 0; j <= 7; j++ )
+    for ( uint8_t j = 0; j <= 7; j++ )
     {
       if ( (j > maxbit) && (it == end) )
       {
         break;
       }
 
-      if( ( (*it) & bmask) == 0 ) // count "0"s
+      if ( ((*it) & bmask) == 0 ) // count "0"s
       {
-        o[i]++;
+        if(last_bit == 1)
+        {
+          partition++;
+        }
+        tol_e[i].o_e[partition]++;
+        last_bit = 0;
       }
       else // count the "1"s
       {
-        a[i]++;
+        tol_e[i].a_e[partition]++;
+        last_bit = 1;
       }
       bmask >>= 1;
     }
-
   }
+  nr_part[i] = partition;
+  printf("\nfts_t.c (tol counter e): Nr. Partitions: %i\n", nr_part[i]);
+  partitions_print(i);
+  return;
+}
+
+// /* sets the tolerance counters */
+// void tol_counter_set_R(int i, uint8_t *start, uint8_t *end, uint8_t maxbit )
+// {
+//   uint8_t *it = start;
+//   for ( ;it <= end; it++ )
+//   {
+//     uint8_t bmask = BIT_7;
+//
+//     for( uint8_t j = 0; j <= 7; j++ )
+//     {
+//       if ( (j > maxbit) && (it == end) )
+//       {
+//         break;
+//       }
+//
+//       if( ( (*it) & bmask) == 0 ) // count "0"s
+//       {
+//         o[i]++;
+//       }
+//       else // count the "1"s
+//       {
+//         a[i]++;
+//       }
+//       bmask >>= 1;
+//     }
+//
+//   }
+//   return;
+// }
+
+// void tolc_update_R(int i)
+// {
+//   o_tolc[i] = o[i];
+//   a_tolc[i] =  a[i];
+//   return;
+// }
+
+void tolc_update(int i)
+{
+  for(int j = 0; j <= nr_part[i]; j++)
+  {
+    tol_count_e[i].o_e[j] = tol_e[i].o_e[j];
+    tol_count_e[i].a_e[j] = tol_e[i].a_e[j];
+  }
+  part_index[i] = 0;
   return;
 }
 
@@ -121,15 +180,15 @@ void fault_detection_routine(rtems_id id, fault_status fs)
     break;
 
     case DRE:
-      if (o_tolc[i] > 0)
+      if (tol_count_e[i].o_e[part_index[i]] > 0)
       {
         // fault detected, so decrease tol counter
-        o_tolc[i]--;
-        printf("\n DETECT ROUTINE DRE: Tolerance Counter: %i\n", o_tolc[i]);
+        tol_count_e[i].o_e[part_index[i]]--;
+        printf("\n DETECT ROUTINE DRE: Tolerance Counter: %i\n", tol_count_e[i].o_e[part_index[i]]);
       }
       else // if tol counter is 0, release rel version
       {
-        printf("\n DETECT ROUTINE DRE: Tolerance Counter: %i\n", o_tolc[i]);
+        printf("\n DETECT ROUTINE DRE: Tolerance Counter: %i\n", tol_count_e[i].o_e[part_index[i]]);
         task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
@@ -138,11 +197,11 @@ void fault_detection_routine(rtems_id id, fault_status fs)
     break;
 
     case DDR:
-      if (o_tolc[i] > 0)
+      if (tol_count_e[i].o_e[part_index[i]] > 0)
       {
         // fault detected, so decrease tol counter
-        o_tolc[i]--;
-        printf("\n DETECT ROUTINE DDR: Tolerance Counter: %i\n", o_tolc[i]);
+        tol_count_e[i].o_e[part_index[i]]--;
+        printf("\n DETECT ROUTINE DDR: Tolerance Counter: %i\n", tol_count_e[i].o_e[part_index[i]]);
       }
       else // already gave a try
       {
@@ -397,12 +456,6 @@ static fts_version static_next_version_t(
 }
 /***/
 
-void tolc_update_R(int i)
-{
-  o_tolc[i] = o[i];
-  a_tolc[i] =  a[i];
-}
-
 fts_version dynamic_next_version_t(
   int i
 )
@@ -418,9 +471,9 @@ fts_version dynamic_next_version_t(
 
       rtems_status_code status;
 
-      if (o_tolc[i] > 0)
+      if (tol_count_e[i].o_e[part_index[i]] > 0)
       {
-        printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", o_tolc[i]);
+        printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", tol_count_e[i].o_e[part_index[i]]);
         task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
 
@@ -433,18 +486,17 @@ fts_version dynamic_next_version_t(
       {
         if(tech == DRE)
         {
-          printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", o_tolc[i]);
+          printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", tol_count_e[i].o_e[part_index[i]]);
           task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
           task_status(rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]));
-          a_tolc[i]--;
+          tol_count_e[i].a_e[part_index[i]]--;
 
           return RECOVERY;
         }
         else // DDR
         {
-          main_id[i] = rtems_task_self();
           //although tolerance counter depleted, still give  try
           task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
@@ -459,7 +511,7 @@ fts_version dynamic_next_version_t(
           // printf("\nWILL SUSPEND MYSELF\n");
           // task_status( rtems_task_suspend( RTEMS_SELF ) );
           // printf("\nGO ON\n");
-          a_tolc[i]--;
+          tol_count_e[i].a_e[part_index[i]]--;
           return DETECTION;
         }
       }
@@ -515,14 +567,12 @@ uint8_t fts_rtems_task_register_t(
     uint8_t pa = create_pattern_t(i, pattern);
     printf("\nfts_t.c (register): Tech %i\n", list.task_list_tech[i]);
 
-    /*set tolerance counters if R pattern and dynamic */
-    if ( ( list.pattern[i] == R_PATTERN ) && ( (list.task_list_tech[i] == DRE) || (list.task_list_tech[i] == DDR) ) )
+    /*set tolerance counters if dynamic */
+    if ( (list.task_list_tech[i] == DRE) || (list.task_list_tech[i] == DDR) )
     {
-      tol_counter_set_R(i, pattern_start, pattern_end, max_bitpos);
-      tolc_update_R(i);
+      tol_counter_set(i, pattern_start, pattern_end, max_bitpos);
+      tolc_update(i);
     }
-
-    printf("\nfts_t.c (register): o: %i, a: %i\n", o_tolc[i], a_tolc[i]);
 
     list.b[i] = basic;
     list.d[i] = detection;
