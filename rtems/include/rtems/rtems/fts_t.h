@@ -128,6 +128,10 @@ uint8_t flag[P_TASKS];
 uint32_t faults; //nr of faults
 rtems_id *period_pointers[P_TASKS];
 
+rtems_id running_id_b[P_TASKS];
+rtems_id running_id_d[P_TASKS];
+rtems_id running_id_r[P_TASKS];
+
 /* Dynamic compensation specific data */
 //just R-pattern for now
 // uint16_t o[P_TASKS]; //(never changes after being set) nr of unrel instances (chances)
@@ -168,6 +172,7 @@ static const rtems_task_priority Prio[] = { 2, 1, 1, 1, 0 };
 
 uint8_t rands_0_100[NR_RANDS];
 uint8_t rand_count;
+uint8_t ok;
 /**
  * @brief Register task for protection
  *

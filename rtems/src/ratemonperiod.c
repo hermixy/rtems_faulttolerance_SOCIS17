@@ -332,9 +332,35 @@ rtems_status_code rtems_rate_monotonic_period(
     return RTEMS_INVALID_ID;
   }
 
+  int16_t i = task_in_list_t(the_period->Object.id);
+  /*at beginning of new period delete all started tasks from last period */
+  if (ok == 1 && i != -1)
+  {
+    printf("\n<<<<delete all tasks from last period>>>>\n");
+
+    printf("\nrunning_id_b: %i\n",running_id_b[i]  );
+    printf("\nrunning_id_d: %i\n",running_id_d[i]  );
+    printf("\nrunning_id_r: %i\n",running_id_r[i]  );
+
+    if (running_id_b[i] != 0)
+    {
+      task_status( rtems_task_delete( running_id_b[i] ) );
+    }
+
+    if (running_id_b[i] != 0)
+    {
+      task_status( rtems_task_delete( running_id_b[i] ) );
+    }
+
+    if (running_id_r[i] != 0)
+    {
+      task_status( rtems_task_delete( running_id_r[i] ) );
+    }
+  }
+
+
   //replenish tol. counters
   //if R pattern and DRE/DDR
-  int16_t i = task_in_list_t(the_period->Object.id);
   if( (i != -1) && ( (list.task_list_tech[i] == DRE) || (list.task_list_tech[i] == DDR) )  )
   {
     //if a in last partition is 0

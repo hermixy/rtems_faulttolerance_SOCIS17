@@ -176,6 +176,9 @@ void fault_detection_routine(rtems_id id, fault_status fs)
         task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
+        running_id_r[i] = Task_id[ 3 ];
+        printf("\nfts.c (detect_routine) ID next task (reliable): %i\n", running_id_r[i] );
+
         task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
     break;
 
@@ -192,6 +195,9 @@ void fault_detection_routine(rtems_id id, fault_status fs)
         task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
         RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
+        running_id_r[i] = Task_id[ 3 ];
+        printf("\nfts.c (detect_routine) ID next task (reliable): %i\n", running_id_r[i] );
+
         task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]) );
       }
     break;
@@ -207,6 +213,9 @@ void fault_detection_routine(rtems_id id, fault_status fs)
       {
           task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
+
+          running_id_r[i] = Task_id[ 3 ];
+          printf("\nfts.c (detect_routine) ID next task (reliable): %i\n", running_id_r[i] );
 
           task_status( rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[3]) );
 
@@ -410,6 +419,10 @@ static fts_version static_next_version_t(
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]);
         task_status(status);
 
+        /* store task id in variable */
+        running_id_b[i] = Task_id[ 1 ];
+        printf("\nfts.c (static_next_version) ID next task (basic): %i\n", running_id_b[i] );
+
         status = rtems_task_start( Task_id[ 1 ], list.b[i], period_pointers[i]);
         task_status(status);
 
@@ -419,6 +432,9 @@ static fts_version static_next_version_t(
        status = rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
          RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]);
        task_status(status);
+
+       running_id_r[i] = Task_id[ 3 ];
+       printf("\nfts.c (static_next_version) ID next task (recovery): %i\n", running_id_r[i] );
 
       status = rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]);
       task_status(status);
@@ -434,6 +450,9 @@ static fts_version static_next_version_t(
         task_status( rtems_task_create(Task_name[ 1 ], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]) );
 
+        running_id_b[i] = Task_id[ 1 ];
+        printf("\nfts.c (static_next_version) ID next task (basic): %i\n", running_id_b[i] );
+
         task_status( rtems_task_start( Task_id[ 1 ], list.b[i], period_pointers[i]) );
         return BASIC;
       }
@@ -443,6 +462,9 @@ static fts_version static_next_version_t(
         //start a detection version
         task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
+
+        running_id_d[i] = Task_id[ 2 ];
+        printf("\nfts.c (static_next_version) ID next task (detection): %i\n", running_id_d[i] );
 
         task_status(rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[i]));
         // if fault, create and start rel. version
@@ -477,6 +499,9 @@ fts_version dynamic_next_version_t(
         task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
           RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
 
+        running_id_d[i] = Task_id[ 2 ];
+        printf("\nfts.c (dynamic_next_version) ID next task (detection): %i\n", running_id_d[i] );
+
         task_status(rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[i]));
 
         return DETECTION;
@@ -490,6 +515,9 @@ fts_version dynamic_next_version_t(
           task_status( rtems_task_create(Task_name[ 3 ], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
 
+          running_id_r[i] = Task_id[ 3 ];
+          printf("\nfts.c (dynamic_next_version) ID next task (recovery): %i\n", running_id_r[i] );
+
           task_status(rtems_task_start( Task_id[ 3 ], list.c[i], period_pointers[i]));
           tol_count_e[i].a_e[part_index[i]]--;
 
@@ -500,6 +528,9 @@ fts_version dynamic_next_version_t(
           //although tolerance counter depleted, still give  try
           task_status( rtems_task_create(Task_name[ 2 ], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
+
+          running_id_d[i] = Task_id[ 2 ];
+          printf("\nfts.c (dynamic_next_version) ID next task (detection): %i\n", running_id_d[i] );
 
           task_status( rtems_task_start( Task_id[ 2 ], list.d[i], period_pointers[i]) );
           // printf("\nSTARTED\n");
@@ -605,6 +636,8 @@ fts_version fts_compensate_t(
   int16_t task_index = task_in_list_t(id);
 
   printf("\nfts_t.c (comp): list index %i\n", task_index);
+
+  ok = 1;
 
   fts_version next_version;
   if (task_index != -1)

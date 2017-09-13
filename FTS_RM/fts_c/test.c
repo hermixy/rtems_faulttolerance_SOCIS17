@@ -78,7 +78,7 @@ uint8_t seed = 5;
 /* fill array with random numbers */
 void rand_nr_list(void)
 {
-  for ( uint8_t i = 0; i < NR_RANDS; i++ )
+  for ( uint16_t i = 0; i < NR_RANDS; i++ )
   {
     rands_0_100[i] = rand() / (RAND_MAX / (100 + 1) + 1);
   }
