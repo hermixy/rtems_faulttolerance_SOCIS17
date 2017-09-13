@@ -5,11 +5,12 @@
  *  @ingroup ClassicRateMon
  */
 
-/*
+/**
  *  COPYRIGHT (c) 1989-2010.
  *  On-Line Applications Research Corporation (OAR).
  *  Copyright (c) 2016 embedded brains GmbH.
  *  COPYRIGHT (c) 2016 Kuan-Hsun Chen.
+ *  COPYRIGHT (c) 2017 Mikail Yayla.
  *
  *  The license and distribution terms for this file may be
  *  found in the file LICENSE in this distribution or at
@@ -87,6 +88,8 @@ static void _Rate_monotonic_Release_postponed_job(
   _Rate_monotonic_Release( the_period, lock_context );
   _Thread_Priority_update( &queue_context );
   _Thread_Dispatch_enable( cpu_self );
+
+  /* call FTS to schedule tasks */
   fts_version ver = fts_compensate_t(the_period->Object.id);
 }
 
@@ -120,6 +123,7 @@ static void _Rate_monotonic_Release_job(
   _Thread_Priority_update( &queue_context );
   _Thread_Dispatch_enable( cpu_self );
 
+  /* call FTS to schedule tasks */
   fts_version ver = fts_compensate_t(the_period->Object.id);
 }
 
@@ -326,18 +330,18 @@ rtems_status_code rtems_rate_monotonic_period(
   rtems_status_code                  status;
   rtems_rate_monotonic_period_states state;
 
-  //check if period has valid ID
   the_period = _Rate_monotonic_Get( id, &lock_context );
   if ( the_period == NULL ) {
     return RTEMS_INVALID_ID;
   }
 
+  /* check if period is registered in the FTS */
   int16_t i = task_in_list_t(the_period->Object.id);
-  /*at beginning of new period delete all started tasks from last period */
-  if (ok == 1 && i != -1)
+
+  if (i != -1)
   {
     printf("\n<<<<delete all tasks from last period>>>>\n");
-
+    /*at beginning of new period, delete all tasks from last period if their ID is not 0 */
     printf("\nrunning_id_b: %i\n",running_id_b[i]  );
     printf("\nrunning_id_d: %i\n",running_id_d[i]  );
     printf("\nrunning_id_r: %i\n",running_id_r[i]  );
@@ -358,28 +362,28 @@ rtems_status_code rtems_rate_monotonic_period(
     }
   }
 
-
-  //replenish tol. counters
-  //if R pattern and DRE/DDR
-  if( (i != -1) && ( (list.task_list_tech[i] == DRE) || (list.task_list_tech[i] == DDR) )  )
+  /* If dynamic compensation is used, replenish tolerance counters when they are depleted */
+  if( (i != -1) && ( (list.tech[i] == DRE) || (list.tech[i] == DDR) )  )
   {
-    //if a in last partition is 0
-      if ( ((tol_count_e[i]).a_e[part_index[i]]) == 0)
+      if ( ((tol_counter_temp[i]).tol_counter_a[partition_index[i]]) == 0)
       {
-        if ( (nr_part[i] == part_index[i]) && (tol_count_e[i].a_e[nr_part[i]] == 0) )
+        /* replenish only if at end of last partition (a is 0) */
+        if ( (nr_partitions[i] == partition_index[i]) && (tol_counter_temp[i].tol_counter_a[nr_partitions[i]] == 0) )
         {
           tolc_update(i);
           printf("\nTOLERANCE COUNTER was at end for index %i, UPDATED\n", i);
         }
-        else // not at last partition
+        else
         {
+          /* was not in last partition */
           printf("\nNEXT PARTITION\n");
-          part_index[i]++;
+          partition_index[i]++;
         }
       }
   }
-  //task which executes needs to be the owner which was set in create earlier
-  //if not own, ...
+
+  /*task which executes needs to be the owner which was set in create earlier*/
+
   executing = _Thread_Executing;
   if ( executing != the_period->owner ) {
     _ISR_lock_ISR_enable( &lock_context );
@@ -468,13 +472,4 @@ rtems_status_code rtems_rate_monotonic_period(
   }
 
   return status;
-}
-
-/* */
-rtems_status_code rtems_rate_monotonic_period_fts(
-  rtems_id       id,
-  rtems_interval length
-)
-{
-    return RTEMS_SUCCESSFUL;
 }

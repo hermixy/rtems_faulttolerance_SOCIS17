@@ -3,25 +3,29 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* set number of random values */
 #define NR_RANDS 128
-// can protect up to P_TASK tasks
+
+/* maximum number of protected tasks */
 #define P_TASKS 10
+
+/* 1000 0000 */
 #define BIT_7 128
+
+/* maximum number of partitions in E-pattern, if R-pattern is used, set to 1 */
 #define PATTERN_PARTITIONS 16
-//if only R-patterns used, set to 1
 
 /**
  * @brief The protection versions of a task
  *
- * The detection version can detect errors, the recovery version can correct errors.
+ * The detection version can detect errors, the CORRECTION version can correct errors.
  *
  */
 typedef enum {
   BASIC,
   DETECTION,
-  RECOVERY
+  CORRECTION
 } fts_version;
-//fts_version gyrotask_vrsion = DETECTION;
 
 /**
  * @brief Fault-tolerance technique of a task
@@ -89,7 +93,6 @@ typedef enum {
   SAFE
 } mode_indicator;
 
-
 /**
  * @brief (m,k) constaint of a task
  *
@@ -101,11 +104,17 @@ typedef struct {
   uint8_t k;
 } m_k;
 
+/**
+ * @brief The list of all protected task IDs
+ *
+ * All the information needed for the FTS is stored in this data structure.
+ */
 struct Task_ID_List {
+  /* IDs of protected tasks */
   rtems_id       task_list_id[P_TASKS];
   uint8_t        m[P_TASKS];
   uint8_t        k[P_TASKS];
-  fts_tech       task_list_tech[P_TASKS];
+  fts_tech       tech[P_TASKS];
   uint16_t       task_list_index; //always is one position ahead of last filled
 
   /* Pattern specific data */
@@ -116,47 +125,51 @@ struct Task_ID_List {
   uint8_t 	     bitpos[P_TASKS];
   uint8_t        max_bitpos[P_TASKS];
 
-  /* Versions */
+  /* task pointers to the execution versions, basic, detection and correction version */
   rtems_task    *b[P_TASKS];
   rtems_task    *d[P_TASKS];
   rtems_task    *c[P_TASKS];
 } list;
 
+/* ID of task which creates and uses the period */
 rtems_id main_id[P_TASKS];
 
-uint8_t flag[P_TASKS];
-uint32_t faults; //nr of faults
+/* pointer to the registered period ID */
 rtems_id *period_pointers[P_TASKS];
 
+/* IDs of tasks that can potentially be created within one period. All tasks created within one period need to be deleted at the start of the new period */
 rtems_id running_id_b[P_TASKS];
 rtems_id running_id_d[P_TASKS];
 rtems_id running_id_r[P_TASKS];
 
-/* Dynamic compensation specific data */
-//just R-pattern for now
-// uint16_t o[P_TASKS]; //(never changes after being set) nr of unrel instances (chances)
-// uint16_t a[P_TASKS]; //(never changes after being set) nr of rel instances
-//
-// uint16_t o_tolc[P_TASKS]; //nr of unrel instances (chances)
-// uint16_t a_tolc[P_TASKS]; //nr of rel instances
+/**
+ * @Tolerance counter data structure for dynamic compensation
+ *
+ * The number of partitions depends on the E-pattern.
+ */
+typedef struct TOLC {
+  uint16_t tol_counter_o[PATTERN_PARTITIONS];
+  uint16_t tol_counter_a[PATTERN_PARTITIONS];
+} tol_counter;
 
-//E-pattern stuff
-typedef struct TOL_C_E {
-  uint16_t o_e[PATTERN_PARTITIONS];
-  uint16_t a_e[PATTERN_PARTITIONS];
-} tolc_e;
+/* Tolerance counter tol_counter is set once, and then never changed. */
+tol_counter tol_counter_const[P_TASKS];
+tol_counter tol_counter_temp[P_TASKS]; // counters
 
-tolc_e tol_e[P_TASKS]; // never changing
-tolc_e tol_count_e[P_TASKS]; // counters
-uint16_t nr_part[P_TASKS]; //number of partitions in the end after setting
-uint16_t part_index[P_TASKS];
+/* Number of partitions after setting partitions */
+uint16_t nr_partitions[P_TASKS];
+uint16_t partition_index[P_TASKS];
 
+/* The three task versions; need to be implemented by the user */
+
+/* Basic version only offers basic protection */
 rtems_task BASIC_V(rtems_task_argument argument);
-
+/* Detection version detects faults */
 rtems_task DETECTION_V(rtems_task_argument argument);
-
+/* Correction version version corrects errors induced by faults */
 rtems_task CORRECTION_V(rtems_task_argument argument);
 
+/* Task specific data */
 static rtems_id   Task_id[ 5 ];
 
 static const uint32_t Periods[] = { 1000, 1000, 1000, 1000, 1000 };
@@ -170,26 +183,22 @@ static const rtems_name Task_name[] = {
 
 static const rtems_task_priority Prio[] = { 2, 1, 1, 1, 0 };
 
+/* total number of faults */
+uint32_t faults;
+
+/* random number array to simulate fault injection */
 uint8_t rands_0_100[NR_RANDS];
 uint8_t rand_count;
-uint8_t ok;
-/**
- * @brief Register task for protection
- *
- * From the next activation on, the task with the given id will be protected,
- * using the technique specified in tech.
- *
- *1
- */
 
- void tolc_update_R(
-   int i
- );
 
- void tolc_update_E(
-   int i
- );
-
+ /**
+  * @brief Register task for protection
+  *
+  * From the next activation on, the task with the given id will be protected,
+  * using the technique specified in tech.
+  *
+  *
+  */
 uint8_t fts_rtems_task_register_t(
   rtems_id *id, //id of the "main" task
   uint8_t m,
@@ -204,13 +213,6 @@ uint8_t fts_rtems_task_register_t(
   rtems_task *recovery
 );
 
-/**
- * @brief Initialize avalible task versions
- *
- * Informs the FTS about the available task versions of the protected task.
- *1
- */
-uint8_t fts_init_versions_t(void);
 
 /**
  * @brief Sign off from FTS
@@ -227,13 +229,18 @@ uint8_t fts_off_t(
  *
  * Gives information about whether the task with the given id
  * is registered for protection.
- *1
+ *
  */
 
-uint8_t fts_task_status_t(
-  rtems_id id
-);
+ int16_t task_in_list_t(
+   rtems_id id
+ );
 
+ /**
+  * @brief creates an (m,k) pattern
+  *
+  *
+  */
 
 int8_t create_pattern_t(
   int i,
@@ -245,13 +252,20 @@ int8_t create_pattern_t(
  *
  * Changes the fault tolerance technique of a specific task to the one
  * specified in the parameter.
- *1
+ *
  */
 uint8_t fts_change_tech_t(
   rtems_id id,
   fts_tech tech
 );
 
+/**
+ * @Gives info about whether the task with ID id is registered in FTS list
+ *
+ * Returns -1 if task is not in list, otherwise 1.
+ *
+ *
+ */
 int16_t task_in_list_t(
   rtems_id id
 );
