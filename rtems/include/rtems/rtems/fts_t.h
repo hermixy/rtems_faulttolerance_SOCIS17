@@ -140,7 +140,7 @@ rtems_id *period_pointers[P_TASKS];
 /* IDs of tasks that can potentially be created within one period. All tasks created within one period need to be deleted at the start of the new period */
 rtems_id running_id_b[P_TASKS];
 rtems_id running_id_d[P_TASKS];
-rtems_id running_id_r[P_TASKS];
+rtems_id running_id_c[P_TASKS];
 
 /**
  * @Tolerance counter data structure for dynamic compensation

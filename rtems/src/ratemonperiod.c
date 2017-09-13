@@ -337,49 +337,51 @@ rtems_status_code rtems_rate_monotonic_period(
 
   /* check if period is registered in the FTS */
   int16_t i = task_in_list_t(the_period->Object.id);
-
   if (i != -1)
   {
     printf("\n<<<<delete all tasks from last period>>>>\n");
     /*at beginning of new period, delete all tasks from last period if their ID is not 0 */
     printf("\nrunning_id_b: %i\n",running_id_b[i]  );
     printf("\nrunning_id_d: %i\n",running_id_d[i]  );
-    printf("\nrunning_id_r: %i\n",running_id_r[i]  );
+    printf("\nrunning_id_c: %i\n",running_id_c[i]  );
 
     if (running_id_b[i] != 0)
     {
       task_status( rtems_task_delete( running_id_b[i] ) );
+      running_id_b[i] = 0;
     }
 
-    if (running_id_b[i] != 0)
+    if (running_id_d[i] != 0)
     {
-      task_status( rtems_task_delete( running_id_b[i] ) );
+      task_status( rtems_task_delete( running_id_d[i] ) );
+      running_id_d[i] = 0;
     }
 
-    if (running_id_r[i] != 0)
+    if (running_id_c[i] != 0)
     {
-      task_status( rtems_task_delete( running_id_r[i] ) );
+      task_status( rtems_task_delete( running_id_c[i] ) );
+      running_id_c[i] = 0;
     }
   }
 
   /* If dynamic compensation is used, replenish tolerance counters when they are depleted */
   if( (i != -1) && ( (list.tech[i] == DRE) || (list.tech[i] == DDR) )  )
   {
-      if ( ((tol_counter_temp[i]).tol_counter_a[partition_index[i]]) == 0)
+    if ( ((tol_counter_temp[i]).tol_counter_a[partition_index[i]]) == 0)
+    {
+      /* replenish only if at end of last partition (a is 0) */
+      if ( (nr_partitions[i] == partition_index[i]) && (tol_counter_temp[i].tol_counter_a[nr_partitions[i]] == 0) )
       {
-        /* replenish only if at end of last partition (a is 0) */
-        if ( (nr_partitions[i] == partition_index[i]) && (tol_counter_temp[i].tol_counter_a[nr_partitions[i]] == 0) )
-        {
-          tolc_update(i);
-          printf("\nTOLERANCE COUNTER was at end for index %i, UPDATED\n", i);
-        }
-        else
-        {
-          /* was not in last partition */
-          printf("\nNEXT PARTITION\n");
-          partition_index[i]++;
-        }
+        tolc_update(i);
+        printf("\nTOLERANCE COUNTER was at end for index %i, UPDATED\n", i);
       }
+      else
+      {
+        /* was not in last partition */
+        printf("\nNEXT PARTITION\n");
+        partition_index[i]++;
+      }
+    }
   }
 
   /*task which executes needs to be the owner which was set in create earlier*/

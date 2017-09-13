@@ -21,7 +21,7 @@ uint8_t * p_e  = &end_p;
 /* rtems task pointers */
 rtems_task *basic;
 rtems_task *detection;
-rtems_task *recovery;
+rtems_task *correction;
 
 /* set (m,k) */
 uint8_t m = 12;
@@ -34,46 +34,11 @@ uint32_t runs = 1;
 fts_tech curr_tech = DDR;
 pattern_type patt = E_PATTERN;
 
-static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
-/* MOVED TO FTS_T.H */
-
-// static const uint32_t Periods[] = { 1000, 1000, 1000, 1000 };
-// static const rtems_name Task_name[] = {
-//   rtems_build_name( 'M', 'A', 'N', ' '),
-//   rtems_build_name( 'B', 'A', 'S', ' '),
-//   rtems_build_name( 'C', 'O', 'R', ' '),
-//   rtems_build_name( 'R', 'E', 'C', ' ')
-// };
-//
-// static const rtems_task_priority Prio[] = { 9, 4, 4, 4 };
-// //static rtems_id   Task_id[ 4 ];
-// static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, recovery
-
+static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, correction
 
 /* initialize seeds for rng */
 uint8_t seed = 5;
 
-/* fault injection function */
-// fault_status fault_injection(void)
-// {
-//   if(fault_rate == 0)
-//   {
-//     return NO_FAULT;
-//   }
-//   /*generate a random number and return fault status 32767*/
-//   int random = rand() / (RAND_MAX / (100 + 1) + 1);
-//   printf("\nT: Random NR is %i\n", random);
-//
-//   if ( random <= fault_rate )
-//   {
-//     faults++;
-//     return FAULT;
-//   }
-//   else
-//   {
-//     return NO_FAULT;
-//   }
-// }
 
 /* fill array with random numbers */
 void rand_nr_list(void)
@@ -181,11 +146,11 @@ rtems_task DETECTION_V(
   {
     case FAULT :
       printf("\n***D: A fault occurred!***\n");
-      break;
+    break;
 
     case NO_FAULT :
       printf("\nD: No fault\n");
-      break;
+    break;
   }
 
   fault_detection_routine(id, fs_T1);
@@ -214,11 +179,11 @@ rtems_task CORRECTION_V(
   {
     case FAULT :
       printf("\n***C: A fault occurred!***\n");
-      break;
+    break;
 
     case NO_FAULT :
       printf("\nC: No fault\n");
-      break;
+    break;
   }
 
   printf("\nCorrection version ends!\n");
@@ -248,17 +213,17 @@ rtems_task FTS_MANAGER(
   /* Store addresses of task pointers */
   basic = &BASIC_V;
   detection = &DETECTION_V;
-  recovery = &CORRECTION_V;
+  correction = &CORRECTION_V;
 
   /* Print addresses of task pointers */
   printf("\nAddress of B: %p\n", (void *)basic);
   printf("\nAddress of D: %p\n", (void *)detection);
-  printf("\nAddress of R: %p\n", (void *)recovery);
+  printf("\nAddress of R: %p\n", (void *)correction);
 
   /* create a period and register the task set for FTS */
-   status = rtems_rate_monotonic_create_fts( Task_name[ 4 ], &RM_period,
-   m, k, curr_tech, patt, p_s, p_e, 7, basic, detection, recovery);
-   task_status(status);
+  status = rtems_rate_monotonic_create_fts( Task_name[ 4 ], &RM_period,
+   m, k, curr_tech, patt, p_s, p_e, 7, basic, detection, correction);
+  task_status(status);
 
   while (1)
   {
