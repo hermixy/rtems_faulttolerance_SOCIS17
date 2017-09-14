@@ -1,8 +1,8 @@
 #include <rtems/rtems/fts_t.h>
-// data structure
-// list of task IDs
 
-/* creates and starts a task version */
+/*
+ *  Create and start a task version for the ID at index i.
+ */
 void release_task(
   int i,
   fts_version task_version
@@ -46,6 +46,9 @@ void release_task(
   return;
 }
 
+/*
+ *  Print out the task status.
+ */
 void task_status(
   rtems_status_code s
 )
@@ -75,7 +78,9 @@ void task_status(
   return 0;
 }
 
-/* Show the execution pattern in the console */
+/*
+ *  Print out the execution pattern on the console.
+ */
 uint8_t show_pattern_t(
   uint8_t *p_curr,
   uint8_t *p_end,
@@ -115,7 +120,9 @@ uint8_t show_pattern_t(
   return 0;
 }
 
-/* print the partitions for dynamic compensation */
+/*
+ *  Print out the replenishment counters on the console
+ */
 void partitions_print(
   int i
 )
@@ -140,7 +147,9 @@ void partitions_print(
   return;
 }
 
-/* set the tolerance counters for dynamic compensation */
+/*
+ *  Set the tolerance counters for dynamic compensation.
+ */
 void tol_counter_set(
   int i,
   uint8_t *start,
@@ -186,7 +195,9 @@ void tol_counter_set(
   return;
 }
 
-/* replenish tolerance counters for dynamic compensation */
+/*
+ * Replenish tolerance counters for dynamic compensation.
+ */
 void tolc_update(
   int i
 )
@@ -200,7 +211,9 @@ void tolc_update(
   return;
 }
 
-/* Check if a certain task is in the list */
+/*
+ * Check if a task with the ID id is regostered.
+ */
 int16_t task_in_list_t(
   rtems_id id
 )
@@ -215,7 +228,9 @@ int16_t task_in_list_t(
   return -1;
 }
 
-/* call at the end of every detection version  */
+/*
+ * Has to be called at the end of every detection version.
+ */
 void fault_detection_routine(
   rtems_id id,
   fault_status fs
@@ -264,7 +279,9 @@ void fault_detection_routine(
   return;
 }
 
-/* Create and set the (m,k) pattern to the given memory adress */
+/*
+ * Create and set the (m,k) pattern to the given memory adress
+ */
 int8_t create_pattern_t(
   int i,
   pattern_type pattern
@@ -274,11 +291,11 @@ int8_t create_pattern_t(
 
   uint8_t *pattern_it;
   pattern_it = list.pattern_start[i];
+
   /*
   * for details on E and R pattern, check
   * http://ieeexplore.ieee.org/document/1661621/
   */
-
   if ( pattern == R_PATTERN )
   {
     int8_t k_minus_m = list.k[i]-list.m[i];
@@ -324,13 +341,14 @@ int8_t create_pattern_t(
       for (uint8_t it_bits = 0; (it_bits < 8) ; it_bits++)
       {
         int raman = ( (((j*(list.k[i]-list.m[i]))/list.k[i]) + ((j*(list.k[i]-list.m[i]))%list.k[i] != 0) )* list.k[i]/(list.k[i]-list.m[i]) );
-
-        // for 'normal' e-pattern:
-        //int raman = ( (((j*list.m[i])/list.k[i]) + ((j*list.m[i])%list.k[i] != 0) )* list.k[i]/list.m[i] );
+        /*
+        * for "normal" E-pattern
+        * int raman = ( (((j*list.m[i])/list.k[i]) + ((j*list.m[i])%list.k[i] != 0) )* list.k[i]/list.m[i] );
+        */
 
         if (j != raman)
         {
-          // insert 1;
+          // insert 1
           set_byte |= bitmask;
         }
         bitmask >>= 1;
@@ -338,7 +356,6 @@ int8_t create_pattern_t(
       }
       *pattern_it = set_byte;
     }
-    //}
   }
 
   printf("\nfts_t.c (create_pattern): Address of first byte: %p\n", (void *)list.pattern_start[i]);
@@ -350,7 +367,9 @@ int8_t create_pattern_t(
   return 1;
 }
 
-/* releases the task versions for static compensation techniques */
+/*
+ * Decides the next task version for static compensation techniques.
+ */
 static fts_version static_next_version_t(
   int i
 )
@@ -364,13 +383,14 @@ static fts_version static_next_version_t(
 
     show_pattern_t(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
 
-    uint8_t bitpos = list.bitpos[i]; // bit to be read
-    uint8_t c_byte = *(list.curr_pos[i]); // byte to be read
+    /* bit and byte to be read */
+    uint8_t bitpos = list.bitpos[i];
+    uint8_t c_byte = *(list.curr_pos[i]);
+    /* get current bit */
     uint8_t bit_mask_one = BIT_7 >> bitpos;
-
     uint8_t result_bit = c_byte & bit_mask_one;
 
-    //if in last byte
+    /* if in last byte */
     if (list.pattern_end[i] == list.curr_pos[i])
     {
       if (list.bitpos[i] < list.max_bitpos[i])
@@ -396,10 +416,7 @@ static fts_version static_next_version_t(
       }
     }
 
-    fts_tech tech = list.tech[i];
-
-    rtems_status_code status;
-    if (tech == SRE)
+    if (list.tech[i] == SRE)
     {
       if (result_bit == 0)
       {
@@ -407,14 +424,14 @@ static fts_version static_next_version_t(
         release_task(i, BASIC);
         return BASIC;
       }
-      else
+      else /* bit is 1 */
       {
         printf("\nfts_t.c (static_next_version):SRE CORRECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
         release_task(i, CORRECTION);
         return CORRECTION;
       }
     }
-    else //SDR
+    else /* SDR */
     {
       if (result_bit == 0)
       {
@@ -422,17 +439,18 @@ static fts_version static_next_version_t(
         release_task(i, BASIC);
         return BASIC;
       }
-      else // bit is 1
+      else /* bit is 1 */
       {
         printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
         release_task(i, DETECTION);
         return DETECTION;
       }
-    //(list.pattern[i]->bitpos < list.pattern[i].max_bitpos)
     }
 }
 
-/* releases the task versions for dynamic compensation techniques */
+/*
+ * Decides the next task version for dynamic compensation techniques.
+ */
 fts_version dynamic_next_version_t(
   int i
 )
@@ -442,28 +460,26 @@ fts_version dynamic_next_version_t(
 
   show_pattern_t(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
 
-  //DRE or DDR, E or R pattern
   fts_tech tech = list.tech[i];
   pattern_type pattern = list.pattern[i];
 
-  rtems_status_code status;
-
+  /* check if tolerance counter depeleted */
   if (tol_counter_temp[i].tol_counter_o[partition_index[i]] > 0)
   {
     printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", tol_counter_temp[i].tol_counter_o[partition_index[i]]);
     release_task(i, DETECTION);
     return DETECTION;
   }
-  else // tolerance counter depleted, only execute RE a times (or DET again)
+  else
   {
-    if(tech == DRE)
+    if(tech == DRE) /* tolerance counter depleted, only execute RE "a" (tolerance counter) times */
     {
       printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", tol_counter_temp[i].tol_counter_o[partition_index[i]]);
       release_task(i, CORRECTION);
       tol_counter_temp[i].tol_counter_a[partition_index[i]]--;
       return CORRECTION;
     }
-    else // DDR
+    else /* DDR, tolerance counter depleted, only execute DET "a" (tolerance counter) times */
     {
       /* although tolerance counter depleted, still give  try */
       printf("\nfts.c (dynamic_next_version): tolerance counter: %i\n", tol_counter_temp[i].tol_counter_o[partition_index[i]]);
@@ -474,6 +490,9 @@ fts_version dynamic_next_version_t(
   }
 }
 
+/*
+ * Register a task for protecton.
+ */
 uint8_t fts_rtems_task_register_t(
   rtems_id *id, //id of the "main" task
   uint8_t m,
@@ -492,47 +511,45 @@ uint8_t fts_rtems_task_register_t(
   if ((i < P_TASKS) && (task_in_list_t((*id)) == -1) && (m <= k) )
   {
     /* Put all information in the tasklist */
-    // store ID
     list.task_list_id[i] = *id;
-    //output
+
     printf("\nfts_t.c (register): ID %i\n", list.task_list_id[i]);
-    // store (m,k)
     list.m[i] = m;
     list.k[i] = k;
-    uint8_t m_m = list.m[i];
-    uint8_t k_k = list.k[i];
 
     /* Output values for (m,k) */
-    printf("\nfts_t.c: m = %i\n", m_m);
-    printf("\nfts_t.c: k = %i\n", k_k);
+    printf("\nfts_t.c: m = %i\n", list.m[i]);
+    printf("\nfts_t.c: k = %i\n", list.k[i]);
 
-    // store technique
+    /* store technique */
     list.tech[i] = tech;
 
-    // set pattern type, E- or R- pattern
+    /* set pattern type, E- or R- pattern */
     list.pattern[i] = pattern;
-
+    /* pattern specific data */
     list.pattern_start[i] = pattern_start;
     list.pattern_end[i] = pattern_end;
     list.curr_pos[i] = pattern_start;
     list.max_bitpos[i] = max_bitpos;
     list.bitpos[i] = 0;
 
+    /* create an (m,k) pattern for ID i*/
     uint8_t pa = create_pattern_t(i, pattern);
     printf("\nfts_t.c (register): Tech %i\n", list.tech[i]);
 
-    /*set tolerance counters if dynamic */
+    /*set tolerance counters if dynamic compensation is used */
     if ( (list.tech[i] == DRE) || (list.tech[i] == DDR) )
     {
       tol_counter_set(i, pattern_start, pattern_end, max_bitpos);
       tolc_update(i);
     }
 
+    /* set pointers to task versions */
     list.b[i] = basic;
     list.d[i] = detection;
     list.c[i] = correction;
 
-    //initialize flag for DDR detection
+    /* pointer to the period  */
     period_pointers[i] = id;
 
     list.task_list_index++;
@@ -542,21 +559,22 @@ uint8_t fts_rtems_task_register_t(
   return 0;
 }
 
-
-/* Runs the FTS scheduler */
+/*
+ * Run the FTS manager.
+ */
 fts_version fts_compensate_t(
   rtems_id id
 )
 {
   printf("\nfts_t.c (comp) ID: %i\n", id);
-  int16_t task_index = task_in_list_t(id);
+  int16_t i = task_in_list_t(id);
 
-  printf("\nfts_t.c (comp): list index %i\n", task_index);
+  printf("\nfts_t.c (comp): list index %i\n", i);
 
   fts_version next_version;
-  if (task_index != -1)
+  if (i != -1)
   {
-    switch(list.tech[task_index])
+    switch(list.tech[i])
     {
       case NONE :
         next_version = BASIC;
@@ -564,22 +582,22 @@ fts_version fts_compensate_t(
       break;
 
       case SRE :
-        next_version = static_next_version_t(task_index);
+        next_version = static_next_version_t(i);
         //printf("\nfts_t.c (comp): SRE\n");
       break;
 
       case SDR :
-        next_version = static_next_version_t(task_index);
+        next_version = static_next_version_t(i);
         //printf("\nfts_t.c (comp): SDR\n");
       break;
 
       case DRE :
-        next_version = dynamic_next_version_t(task_index);
+        next_version = dynamic_next_version_t(i);
         //printf("\nfts_t.c (comp): DRE\n");
       break;
 
       case DDR :
-        next_version =  dynamic_next_version_t(task_index);
+        next_version =  dynamic_next_version_t(i);
         //printf("\nfts_t.c (comp): DDR\n");
       break;
     }
@@ -632,5 +650,4 @@ uint8_t fts_change_tech_t(
   }
 return 0;
 }
-
-/***/
+/* END */

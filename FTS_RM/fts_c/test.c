@@ -15,7 +15,7 @@ uint8_t end_p = 0; // last byte of pattern
 uint8_t begin_p = 0; //first byte
 
 
-uint8_t * p_s = &begin_p; // address of first byte
+uint8_t * p_s = &begin_p;
 uint8_t * p_e  = &end_p;
 
 /* rtems task pointers */
@@ -52,7 +52,8 @@ void rand_nr_list(void)
 
 /* get a random number out of the random number array */
 uint8_t get_rand(void)
-{//rand_count always indexes the random nr which was not used yet
+{
+  /* rand_count always indexes the random nr which was not used yet */
   return rands_0_100[rand_count++];
 }
 
@@ -83,7 +84,7 @@ fault_status get_fault(uint8_t rand_nr)
   }
 }
 
-/* display all random vals */
+/* display all random values */
 void show_rands(void)
 {
   printf("\nNr of rands: %i\n", NR_RANDS);
@@ -97,7 +98,7 @@ void show_rands(void)
   }
 }
 
-/* basic version task */
+/* basic task version */
 rtems_task BASIC_V(
   rtems_task_argument argument
 )
@@ -153,6 +154,7 @@ rtems_task DETECTION_V(
     break;
   }
 
+  /* Call the fault detection routine at the end of the detection version */
   fault_detection_routine(id, fs_T1);
 
   printf("\nDetection version ends!\n");
@@ -220,15 +222,13 @@ rtems_task FTS_MANAGER(
   printf("\nAddress of D: %p\n", (void *)detection);
   printf("\nAddress of R: %p\n", (void *)correction);
 
-  /* create a period and register the task set for FTS */
+  /* create a period and register the task set for RM-FTS */
   status = rtems_rate_monotonic_create_fts( Task_name[ 4 ], &RM_period,
    m, k, curr_tech, patt, p_s, p_e, 7, basic, detection, correction);
   task_status(status);
 
   while (1)
   {
-    // status = rtems_rate_monotonic_get_status( RM_period, &period_status );
-    // task_status(status);
     status = rtems_rate_monotonic_period( RM_period, 100 );
 
     printf("\n*****************************\n");
@@ -255,6 +255,7 @@ rtems_task FTS_MANAGER(
       printf("\nPERIOD TIMEOUT\n");
     }
   }
+
   printf("\nBROKE\n");
   status = rtems_rate_monotonic_delete( RM_period );
   if ( status != RTEMS_SUCCESSFUL )
@@ -266,7 +267,6 @@ rtems_task FTS_MANAGER(
   printf( "rtems_task_delete returned with status of %d.\n", status );
   exit( 1 );
 };
-
 
 /* Initialization: Create and start task */
 rtems_task Init(
