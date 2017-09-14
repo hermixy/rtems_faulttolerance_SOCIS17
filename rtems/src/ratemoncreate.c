@@ -154,7 +154,7 @@ rtems_status_code rtems_rate_monotonic_create_fts(
   /* No need to lock object anymore, finished setting data */
   _Objects_Allocator_unlock();
 
-  /* SET STUFF FOR FTS */
+  /* Set FTS data */
   uint8_t reg = fts_rtems_task_register_t(
   id, //id of the period. // in threadq.h, the struct of the TCB is defined
   m,
