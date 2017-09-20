@@ -344,7 +344,13 @@ rtems_status_code rtems_rate_monotonic_period(
     printf("\nrunning_id_b: %i\n",running_id_b[i]  );
     printf("\nrunning_id_d: %i\n",running_id_d[i]  );
     printf("\nrunning_id_c: %i\n",running_id_c[i]  );
-
+    /**
+     * If the ID is 0, which happens when the variables running_id_b/d/c are not set,
+     * then don't delete the task, otherwise the task with ID==0 will be deleted,
+     * which is possibly the first task in the system.
+     *
+     * Delete all tasks at the beginning of a new period.
+     */
     if (running_id_b[i] != 0)
     {
       task_status( rtems_task_delete( running_id_b[i] ) );

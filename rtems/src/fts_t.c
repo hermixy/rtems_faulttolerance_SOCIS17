@@ -74,6 +74,9 @@ void task_status(
     case RTEMS_ILLEGAL_ON_REMOTE_OBJECT  :
       printf("\nRTEMS_ILLEGAL_ON_REMOTE_OBJECT\n");
     break;
+
+    default:
+      printf("\nStatus code not listed\n");
   }
   return 0;
 }
@@ -225,6 +228,7 @@ int16_t task_in_list_t(
       return i;
     }
   }
+  printf( "\nGiven ID is not in FTS ID list\n" );
   return -1;
 }
 
@@ -374,78 +378,78 @@ static fts_version static_next_version_t(
   int i
 )
 {
-    printf("\nfts.c (static next version): Address of first byte: %p\n", (void *)list.pattern_start[i]);
-    printf("\nfts.c (static next version): Address of current byte: %p\n", (void *)list.curr_pos[i]);
-    printf("\nfts.c (static next version): Address of last byte: %p\n", (void *)list.pattern_end[i]);
+  printf("\nfts.c (static next version): Address of first byte: %p\n", (void *)list.pattern_start[i]);
+  printf("\nfts.c (static next version): Address of current byte: %p\n", (void *)list.curr_pos[i]);
+  printf("\nfts.c (static next version): Address of last byte: %p\n", (void *)list.pattern_end[i]);
 
-    printf("\nfts.c (static_next_version):  index is %i\n", i);
-    printf("\nIn static_next_version:");
+  printf("\nfts.c (static_next_version):  index is %i\n", i);
+  printf("\nIn static_next_version:");
 
-    show_pattern_t(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
+  show_pattern_t(list.pattern_start[i], list.pattern_end[i], list.max_bitpos[i]);
 
-    /* bit and byte to be read */
-    uint8_t bitpos = list.bitpos[i];
-    uint8_t c_byte = *(list.curr_pos[i]);
-    /* get current bit */
-    uint8_t bit_mask_one = BIT_7 >> bitpos;
-    uint8_t result_bit = c_byte & bit_mask_one;
+  /* bit and byte to be read */
+  uint8_t bitpos = list.bitpos[i];
+  uint8_t c_byte = *(list.curr_pos[i]);
+  /* get current bit */
+  uint8_t bit_mask_one = BIT_7 >> bitpos;
+  uint8_t result_bit = c_byte & bit_mask_one;
 
-    /* if in last byte */
-    if (list.pattern_end[i] == list.curr_pos[i])
+  /* if in last byte */
+  if (list.pattern_end[i] == list.curr_pos[i])
+  {
+    if (list.bitpos[i] < list.max_bitpos[i])
     {
-      if (list.bitpos[i] < list.max_bitpos[i])
-      {
-        list.bitpos[i]++;
-      }
-      else
-      {
-        list.bitpos[i] = 0;
-        list.curr_pos[i] = list.pattern_start[i];
-      }
+      list.bitpos[i]++;
     }
     else
     {
-      if ( list.bitpos[i] < 7 )
-      {
-        list.bitpos[i]++;
-      }
-      else
-      {
-        list.bitpos[i] = 0;
-        list.curr_pos[i]++;
-      }
+      list.bitpos[i] = 0;
+      list.curr_pos[i] = list.pattern_start[i];
     }
+  }
+  else
+  {
+    if ( list.bitpos[i] < 7 )
+    {
+      list.bitpos[i]++;
+    }
+    else
+    {
+      list.bitpos[i] = 0;
+      list.curr_pos[i]++;
+    }
+  }
 
-    if (list.tech[i] == SRE)
+  if (list.tech[i] == SRE)
+  {
+    if (result_bit == 0)
     {
-      if (result_bit == 0)
-      {
-        printf("\nfts_t.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-        release_task(i, BASIC);
-        return BASIC;
-      }
-      else /* bit is 1 */
-      {
-        printf("\nfts_t.c (static_next_version):SRE CORRECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-        release_task(i, CORRECTION);
-        return CORRECTION;
-      }
+      printf("\nfts_t.c (static_next_version):SRE BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+      release_task(i, BASIC);
+      return BASIC;
     }
-    else /* SDR */
+    else /* bit is 1 */
     {
-      if (result_bit == 0)
-      {
-        printf("\nfts_t.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-        release_task(i, BASIC);
-        return BASIC;
-      }
-      else /* bit is 1 */
-      {
-        printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
-        release_task(i, DETECTION);
-        return DETECTION;
-      }
+      printf("\nfts_t.c (static_next_version):SRE CORRECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+      release_task(i, CORRECTION);
+      return CORRECTION;
     }
+  }
+  else /* SDR */
+  {
+    if (result_bit == 0)
+    {
+      printf("\nfts_t.c (static_next_version):SDR BASIC, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+      release_task(i, BASIC);
+      return BASIC;
+    }
+    else /* bit is 1 */
+    {
+      printf("\nfts_t.c (static_next_version):SDR DETECTION, BIT: %i, BITPOS: %i\n", result_bit, list.bitpos[i]);
+      release_task(i, DETECTION);
+      return DETECTION;
+    }
+  }
 }
 
 /*
@@ -556,6 +560,7 @@ uint8_t fts_rtems_task_register_t(
 
     return 1;
   }
+  printf( "\nfts_t.c: Exception occurred when registering the ID in the FTS ID list\n" );
   return 0;
 }
 
@@ -600,9 +605,18 @@ fts_version fts_compensate_t(
         next_version =  dynamic_next_version_t(i);
         //printf("\nfts_t.c (comp): DDR\n");
       break;
+
+      default:
+        next_version = CORRECTION;
     }
+    return next_version;
   }
-  return next_version;
+  else
+  {
+    printf( "\nfts_t.c (compensate): ID is not in FTS ID list\n" );
+    next_version = CORRECTION;
+    return next_version;
+  }
 }
 
 /* removing a task from the tasklist might be dangerous*/
@@ -632,6 +646,7 @@ uint8_t fts_off_t(
   }
   else
   {
+    printf("\nException when removing an ID from FTS ID list\n");
     return -1;
   }
 }
@@ -648,6 +663,7 @@ uint8_t fts_change_tech_t(
     list.tech[list_index] = tech;
     return 1;
   }
+printf( "\nfts_t.c (change_tech): ID is not in FTS ID list\n" );
 return 0;
 }
 /* END */

@@ -170,8 +170,8 @@ rtems_status_code rtems_rate_monotonic_create_fts(
   );
 
   if ( reg == 0 ) {
+    printf("\nCould not register ID in the FTS\n");
     return RTEMS_INVALID_NUMBER;
   }
-
   return RTEMS_SUCCESSFUL;
 }
