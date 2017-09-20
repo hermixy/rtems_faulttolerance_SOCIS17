@@ -201,6 +201,7 @@ rtems_task FTS_MANAGER(
 {
   rtems_status_code                          status;
   rtems_id                                   RM_period;
+  rtems_name                                 rm_name = rtems_build_name( 'R', 'M', 'T', ' ');
   rtems_id                                   selfid = rtems_task_self();
   rtems_rate_monotonic_period_status         period_status;
 
@@ -222,8 +223,9 @@ rtems_task FTS_MANAGER(
   printf("\nAddress of D: %p\n", (void *)detection);
   printf("\nAddress of R: %p\n", (void *)correction);
 
+
   /* create a period and register the task set for RM-FTS */
-  status = rtems_rate_monotonic_create_fts( Task_name[ 4 ], &RM_period,
+  status = rtems_rate_monotonic_create_fts( rm_name, &RM_period,
    m, k, curr_tech, patt, p_s, p_e, 7, basic, detection, correction);
   task_status(status);
 
@@ -280,14 +282,16 @@ rtems_task Init(
   rtems_status_code status;
 
   /* Create Task FTS */
-  status = rtems_task_create(
-  Task_name[0], Prio[0], RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
-  RTEMS_DEFAULT_ATTRIBUTES, &Task_id[0]
-    );
+
+  rtems_name fts_test = rtems_build_name( 'M', 'A', 'N', ' ');
+  rtems_id fts_test_id;
+
+  status = rtems_task_create( fts_test, 2, RTEMS_MINIMUM_STACK_SIZE, RTEMS_DEFAULT_MODES,
+  RTEMS_DEFAULT_ATTRIBUTES, &fts_test_id );
   task_status(status);
 
   // start FTS Manager task
-  status = rtems_task_start( Task_id[ 0 ], FTS_MANAGER, 0);
+  status = rtems_task_start( fts_test_id, FTS_MANAGER, 0);
   task_status(status);
   rtems_task_delete( rtems_task_self() );
 }

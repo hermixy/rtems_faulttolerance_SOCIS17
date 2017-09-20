@@ -160,6 +160,14 @@ tol_counter tol_counter_temp[P_TASKS]; // counters
 uint16_t nr_partitions[P_TASKS];
 uint16_t partition_index[P_TASKS];
 
+/* Task specifications for creation of the task versions */
+typedef struct Task_Specs {
+  rtems_task_priority  initial_priority[P_TASKS];
+  size_t               stack_size[P_TASKS];
+  rtems_mode           initial_modes[P_TASKS];
+  rtems_attribute      attribute_set[P_TASKS];
+} task_specs;
+
 /* The three task versions; need to be implemented by the user */
 
 /* Basic version only offers basic protection */
@@ -170,18 +178,16 @@ rtems_task DETECTION_V(rtems_task_argument argument);
 rtems_task CORRECTION_V(rtems_task_argument argument);
 
 /* Task specific data */
-static rtems_id   Task_id[ 5 ];
+static rtems_id   Task_id[ 3 ];
 
-static const uint32_t Periods[] = { 1000, 1000, 1000, 1000, 1000 };
+//static const uint32_t Periods[] = { 1000, 1000, 1000 };
 static const rtems_name Task_name[] = {
-  rtems_build_name( 'M', 'A', 'N', ' '),
   rtems_build_name( 'B', 'A', 'S', ' '),
   rtems_build_name( 'C', 'O', 'R', ' '),
-  rtems_build_name( 'R', 'E', 'C', ' '),
-  rtems_build_name( 'R', 'M', 'T', ' ')
+  rtems_build_name( 'R', 'E', 'C', ' ')
 };
 
-static const rtems_task_priority Prio[] = { 2, 1, 1, 1, 0 };
+static const rtems_task_priority Prio[] = { 1, 1, 1 };
 
 /* total number of faults */
 uint32_t faults;

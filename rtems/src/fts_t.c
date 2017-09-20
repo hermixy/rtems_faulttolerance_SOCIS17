@@ -11,36 +11,36 @@ void release_task(
   switch (task_version)
   {
     case BASIC:
-      task_status( rtems_task_create(Task_name[1], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
-        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]) );
+      task_status( rtems_task_create(Task_name[0], Prio[0], RTEMS_MINIMUM_STACK_SIZE,
+        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 0 ]) );
 
-      running_id_b[i] = Task_id[ 1 ];
+      running_id_b[i] = Task_id[ 0 ];
 
       printf("\nfts.c (release_task) ID next task (basic): %i\n", running_id_b[i] );
 
-      task_status( rtems_task_start( Task_id[1], list.b[i], period_pointers[i]) );
+      task_status( rtems_task_start( Task_id[0], list.b[i], period_pointers[i]) );
     break;
 
     case DETECTION:
-      task_status( rtems_task_create(Task_name[2], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
-        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
+      task_status( rtems_task_create(Task_name[1], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
+        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]) );
 
-      running_id_d[i] = Task_id[ 2 ];
+      running_id_d[i] = Task_id[ 1 ];
 
       printf("\nfts.c (release_task) ID next task (detection): %i\n", running_id_d[i] );
 
-      task_status( rtems_task_start( Task_id[2], list.d[i], period_pointers[i]) );
+      task_status( rtems_task_start( Task_id[1], list.d[i], period_pointers[i]) );
     break;
 
     case CORRECTION:
-      task_status( rtems_task_create(Task_name[3], Prio[3], RTEMS_MINIMUM_STACK_SIZE,
-        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 3 ]) );
+      task_status( rtems_task_create(Task_name[2], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
+        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
 
-      running_id_c[i] = Task_id[ 3 ];
+      running_id_c[i] = Task_id[ 2 ];
 
       printf("\nfts.c (release_task) ID next task (correction): %i\n", running_id_c[i] );
 
-      task_status( rtems_task_start( Task_id[3], list.c[i], period_pointers[i]) );
+      task_status( rtems_task_start( Task_id[2], list.c[i], period_pointers[i]) );
     break;
   }
   return;
