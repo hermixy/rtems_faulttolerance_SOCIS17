@@ -26,7 +26,7 @@
 #include <rtems/score/thread.h>
 #include <rtems/score/watchdogimpl.h>
 
-#include <rtems/rtems/fts.h>
+#include <rtems/rtems/fts_t.h>
 /*
  *  rtems_rate_monotonic_create
  *
@@ -93,13 +93,9 @@ rtems_status_code rtems_rate_monotonic_create_fts(
   uint8_t m,
   uint8_t k,
   fts_tech tech,
-  pattern_type pattern,
-  uint8_t *pattern_start,
-  uint8_t *pattern_end,
-  uint8_t max_bitpos,
-  rtems_task *basic,
-  rtems_task *detection,
-  rtems_task *recovery
+  pattern_specs *pattern_s,
+  task_versions *versions,
+  task_user_specs *specs
 )
 {
   /* Rate monotonic control block, check ratemon.h */
@@ -160,13 +156,9 @@ rtems_status_code rtems_rate_monotonic_create_fts(
   m,
   k,
   tech,
-  pattern,
-  pattern_start,
-  pattern_end,
-  max_bitpos,
-  basic,
-  detection,
-  recovery
+  pattern_s,
+  versions,
+  specs
   );
 
   if ( reg == 0 ) {

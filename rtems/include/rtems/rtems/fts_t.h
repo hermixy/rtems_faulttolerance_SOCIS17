@@ -143,7 +143,7 @@ rtems_id running_id_d[P_TASKS];
 rtems_id running_id_c[P_TASKS];
 
 /**
- * @Tolerance counter data structure for dynamic compensation
+ * Tolerance counter data structure for dynamic compensation
  *
  * The number of partitions depends on the E-pattern.
  */
@@ -161,15 +161,37 @@ uint16_t nr_partitions[P_TASKS];
 uint16_t partition_index[P_TASKS];
 
 /* Task specifications for creation of the task versions */
-typedef struct Task_Specs {
+struct Task_Specs {
   rtems_task_priority  initial_priority[P_TASKS];
   size_t               stack_size[P_TASKS];
   rtems_mode           initial_modes[P_TASKS];
   rtems_attribute      attribute_set[P_TASKS];
 } task_specs;
 
-/* The three task versions; need to be implemented by the user */
+/* Task specificatios for creation of task versions, for user */
+typedef struct Task_Specs_User {
+  rtems_task_priority  initial_priority;
+  size_t               stack_size;
+  rtems_mode           initial_modes;
+  rtems_attribute      attribute_set;
+} task_user_specs;
 
+/* Struct that holds execution versions of a task  */
+typedef struct Exec_Versions {
+  rtems_task    *b;
+  rtems_task    *d;
+  rtems_task    *c;
+} task_versions;
+
+/* Struct that holds pattern information */
+typedef struct Pattern_Info {
+  pattern_type pattern;
+  uint8_t *pattern_start;
+  uint8_t *pattern_end;
+  uint8_t max_bitpos;
+} pattern_specs;
+
+/* The three task versions; need to be implemented by the user */
 /* Basic version only offers basic protection */
 rtems_task BASIC_V(rtems_task_argument argument);
 /* Detection version detects faults */
@@ -179,15 +201,12 @@ rtems_task CORRECTION_V(rtems_task_argument argument);
 
 /* Task specific data */
 static rtems_id   Task_id[ 3 ];
-
-//static const uint32_t Periods[] = { 1000, 1000, 1000 };
 static const rtems_name Task_name[] = {
   rtems_build_name( 'B', 'A', 'S', ' '),
-  rtems_build_name( 'C', 'O', 'R', ' '),
-  rtems_build_name( 'R', 'E', 'C', ' ')
+  rtems_build_name( 'D', 'E', 'T', ' '),
+  rtems_build_name( 'C', 'O', 'R', ' ')
 };
-
-static const rtems_task_priority Prio[] = { 1, 1, 1 };
+//static const rtems_task_priority Prio[] = { 1, 1, 1 };
 
 /* total number of faults */
 uint32_t faults;
@@ -207,16 +226,12 @@ uint8_t rand_count;
   */
 uint8_t fts_rtems_task_register_t(
   rtems_id *id, //id of the "main" task
-  uint8_t m,
-  uint8_t k,
+  uint16_t m,
+  uint16_t k,
   fts_tech tech,
-  pattern_type pattern,
-  uint8_t *pattern_start,
-  uint8_t *pattern_end,
-  uint8_t max_bitpos,
-  rtems_task *basic,
-  rtems_task *detection,
-  rtems_task *recovery
+  pattern_specs *pattern_s,
+  task_versions *versions,
+  task_user_specs *specs
 );
 
 

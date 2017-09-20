@@ -11,8 +11,8 @@ void release_task(
   switch (task_version)
   {
     case BASIC:
-      task_status( rtems_task_create(Task_name[0], Prio[0], RTEMS_MINIMUM_STACK_SIZE,
-        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 0 ]) );
+      task_status( rtems_task_create(Task_name[0], task_specs.initial_priority[i], task_specs.stack_size[i],
+        task_specs.initial_modes[i], task_specs.attribute_set[i], &Task_id[ 0 ]) );
 
       running_id_b[i] = Task_id[ 0 ];
 
@@ -22,8 +22,8 @@ void release_task(
     break;
 
     case DETECTION:
-      task_status( rtems_task_create(Task_name[1], Prio[1], RTEMS_MINIMUM_STACK_SIZE,
-        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 1 ]) );
+      task_status( rtems_task_create(Task_name[1], task_specs.initial_priority[i], task_specs.stack_size[i],
+        task_specs.initial_modes[i], task_specs.attribute_set[i], &Task_id[ 1 ]) );
 
       running_id_d[i] = Task_id[ 1 ];
 
@@ -33,8 +33,8 @@ void release_task(
     break;
 
     case CORRECTION:
-      task_status( rtems_task_create(Task_name[2], Prio[2], RTEMS_MINIMUM_STACK_SIZE,
-        RTEMS_DEFAULT_MODES,RTEMS_DEFAULT_ATTRIBUTES, &Task_id[ 2 ]) );
+      task_status( rtems_task_create(Task_name[2], task_specs.initial_priority[i], task_specs.stack_size[i],
+        task_specs.initial_modes[i], task_specs.attribute_set[i], &Task_id[ 2 ]) );
 
       running_id_c[i] = Task_id[ 2 ];
 
@@ -499,16 +499,12 @@ fts_version dynamic_next_version_t(
  */
 uint8_t fts_rtems_task_register_t(
   rtems_id *id, //id of the "main" task
-  uint8_t m,
-  uint8_t k,
+  uint16_t m,
+  uint16_t k,
   fts_tech tech,
-  pattern_type pattern,
-  uint8_t *pattern_start,
-  uint8_t *pattern_end,
-  uint8_t max_bitpos,
-  rtems_task *basic,
-  rtems_task *detection,
-  rtems_task *correction
+  pattern_specs *pattern_s,
+  task_versions *versions,
+  task_user_specs *specs
 )
 {
   uint16_t i = list.task_list_index;
@@ -529,29 +525,35 @@ uint8_t fts_rtems_task_register_t(
     list.tech[i] = tech;
 
     /* set pattern type, E- or R- pattern */
-    list.pattern[i] = pattern;
+    list.pattern[i] = pattern_s->pattern;
     /* pattern specific data */
-    list.pattern_start[i] = pattern_start;
-    list.pattern_end[i] = pattern_end;
-    list.curr_pos[i] = pattern_start;
-    list.max_bitpos[i] = max_bitpos;
+    list.pattern_start[i] = pattern_s->pattern_start;
+    list.pattern_end[i] = pattern_s->pattern_end;
+    list.curr_pos[i] = pattern_s->pattern_start;
+    list.max_bitpos[i] = pattern_s->max_bitpos;
     list.bitpos[i] = 0;
 
     /* create an (m,k) pattern for ID i*/
-    uint8_t pa = create_pattern_t(i, pattern);
+    uint8_t pa = create_pattern_t(i, list.pattern[i]);
     printf("\nfts_t.c (register): Tech %i\n", list.tech[i]);
 
     /*set tolerance counters if dynamic compensation is used */
     if ( (list.tech[i] == DRE) || (list.tech[i] == DDR) )
     {
-      tol_counter_set(i, pattern_start, pattern_end, max_bitpos);
+      tol_counter_set(i, pattern_s->pattern_start, pattern_s->pattern_end, pattern_s->max_bitpos);
       tolc_update(i);
     }
 
     /* set pointers to task versions */
-    list.b[i] = basic;
-    list.d[i] = detection;
-    list.c[i] = correction;
+    list.b[i] = versions->b;
+    list.d[i] = versions->d;
+    list.c[i] = versions->c;
+
+    /* set task user specs */
+    task_specs.initial_priority[i] = specs->initial_priority;
+    task_specs.stack_size[i] = specs->stack_size;
+    task_specs.initial_modes[i] = specs->initial_modes;
+    task_specs.attribute_set[i] = specs->attribute_set;
 
     /* pointer to the period  */
     period_pointers[i] = id;

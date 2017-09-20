@@ -13,15 +13,17 @@
 uint8_t end_p = 0; // last byte of pattern
 //uint8_t mid_p = 0; // second byte
 uint8_t begin_p = 0; //first byte
-
-
 uint8_t * p_s = &begin_p;
 uint8_t * p_e  = &end_p;
+pattern_type patt = E_PATTERN;
+uint8_t maxbit = 7;
+pattern_specs p_specs;
 
-/* rtems task pointers */
-rtems_task *basic;
-rtems_task *detection;
-rtems_task *correction;
+/* task versions struct containing the task pointers */
+task_versions versions;
+
+/* task user specs */
+task_user_specs task_sp;
 
 /* set (m,k) */
 uint8_t m = 12;
@@ -32,7 +34,6 @@ uint8_t fault_rate = 100; //percent; fault per task
 uint32_t maxruns = 32; //nr of maximum runs
 uint32_t runs = 1;
 fts_tech curr_tech = DDR;
-pattern_type patt = E_PATTERN;
 
 static uint32_t tsk_counter[] = { 0, 0, 0 }; //basic, detection, correction
 
@@ -214,19 +215,31 @@ rtems_task FTS_MANAGER(
   printf("\nAddress of E: %p\n", (void *)p_e);
 
   /* Store addresses of task pointers */
-  basic = &BASIC_V;
-  detection = &DETECTION_V;
-  correction = &CORRECTION_V;
+  versions.b = &BASIC_V;
+  versions.d = &DETECTION_V;
+  versions.c = &CORRECTION_V;
 
   /* Print addresses of task pointers */
-  printf("\nAddress of B: %p\n", (void *)basic);
-  printf("\nAddress of D: %p\n", (void *)detection);
-  printf("\nAddress of R: %p\n", (void *)correction);
+  printf("\nAddress of B: %p\n", (void *)versions.b);
+  printf("\nAddress of D: %p\n", (void *)versions.d);
+  printf("\nAddress of R: %p\n", (void *)versions.d);
 
+  /* Pattern specifications */
+  p_specs.pattern = patt;
+  p_specs.pattern_start = p_s;
+  p_specs.pattern_end = p_e;
+  p_specs.max_bitpos = maxbit;
+
+  rtems_task_priority prio = 1;
+  /* task version specification */
+  task_sp.initial_priority = prio;
+  task_sp.stack_size = RTEMS_MINIMUM_STACK_SIZE;
+  task_sp.initial_modes = RTEMS_DEFAULT_MODES;
+  task_sp.attribute_set = RTEMS_DEFAULT_ATTRIBUTES;
 
   /* create a period and register the task set for RM-FTS */
   status = rtems_rate_monotonic_create_fts( rm_name, &RM_period,
-   m, k, curr_tech, patt, p_s, p_e, 7, basic, detection, correction);
+   m, k, curr_tech, &p_specs, &versions, &task_sp );
   task_status(status);
 
   while (1)
