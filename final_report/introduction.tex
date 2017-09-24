@@ -1,0 +1,31 @@
+% introduction.tex
+\chapter{Introduction}
+\section{Motivation}
+Mobile and embedded systems are susceptible to transient faults in the underlying hardware~\cite{1545891}, which may occur due to rising integration density, low voltage operation and environmental influences such as radiation and electromagnetic interference. Transient faults may alter the execution state or incur soft-errors. Bitflips are a direct cause of transient faults, and occur in register, processor, main memory, and other parts of a system.
+The consequences of bitflips are difficult to predict, but in the worst case they may lead to catastrophic events such as unrecoverable system failure. Recently, a Japanese satellite Hitomi crashed, because its control loop got corrupted. According to investigations in ~\cite{hitomi} a bitflip occurred in the satellite's rotation control, which made it rotate uncontrollably; it broke into several pieces. The financial damage was severe; a few hundred million Euros.
+%--
+To prevent such catastrophes, one way is to utilize software-based approaches such as redundant execution and error-correction code~\cite{1395730, 994913, 6513800, 4700445, 1137644}. %TODO add avionics 9 times example
+Yet, trivially adopting redundant execution or error
+correction code may lead to significant computational  overhead, e.g., when N+1 redundancy is used. Due  to  spatial
+limitation  and  timeliness,  skillfully  adopting  software-based
+fault-tolerance  approaches  to  prevent system  failure  due  to  transient
+faults is not a trivial problem.
+
+Instead of over-provisioning with extra hardware or execution time, sometimes errors can be tolerated; there may be no need to protect the whole system. Due to the potential inherent
+safety  margins  and  noise  interference,  control  applications
+might  tolerate  a  limited  number  of  errors  with  a  downgrade
+of  control  performance  without  leading  to  an  unrecoverable
+system state. In previous studies, techniques have been proposed for delayed~\cite{Ramanathan:1999:OMR:307977.307993, 6241580} or dropped~\cite{4739306,7153812} signal samples. Chen et al. \cite{Chen2016}  explored  the  fault  tolerance  of  a
+LegoNXT  path-tracing  control  application.  To  prevent the  system  from mission  failures, they  proposed  to use the $(m,k)$-firm real-time task model to quantify the robustness of control tasks, which means that $m$ out of $k$
+consecutive task  instances  need  to  be  correct, called $(m,k)$
+robustness  requirement,  using which they provided compensation techniques to manage the expensive error correction to avoid overprovision. 
+
+\section{Project Goal}
+
+The purpose of this project is to provide an implementation of the techniques in~\cite{Chen2016} on the real-time operating system RTEMS \cite{rtemsweb}. In the previous study, the application solely runs on a LegoNXT robot using nxtOSEK, and is not portable. An implementation in RTEMS allows us to port the application to several other platforms; we can test the techniques on  other hardware, e.g., Raspberry Pi, to reach more general conclusions about fault tolerance of control tasks and the proposed soft-error handling techniques. The application including the fault tolerance techniques is an option for space vehicles to manage redundant executions in the future.   
+
+\section{Report Structure}
+The background of transient faults and the type of faults the Fault Tolerant Scheduler (FTS) can protect from is presented in the second chapter.
+The system model and notation is introduced in Chapter 3, including the task versions, the $(m,k)$ robustness requirement, and the schedulability and scheduling. 
+The soft-error handling techniques S-RE, S-DR, D-RE, and D-DR, which decide when to execute which task version, are the central theme in Chapter 4. Their theoretical background is covered briefly as well.
+In Chapter 5, the integration of the FTS in RTEMS, and tutorials on how to add and use the FTS are presented.

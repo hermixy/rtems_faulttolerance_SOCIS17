@@ -1,0 +1,98 @@
+% chapter2.tex
+\chapter{System Model and Notation}
+
+In this section models and notations used in this report are explained.
+
+\section{Control Application Model}
+A control application has a set of periodic, preemptive control tasks $\Gamma = \setof{\tau_1, \tau_2, \ldots, \tau_n}$. Each task has a period $T_i$ and a relative deadline $D_i = T_i$.
+%A control task $\tau_i$ releases task instances with its period $T_i$.
+The output of each instance will be used by itself again in the next instance, in a closed loop feedback control application.
+
+A task is available in three versions with different execution times: unreliable version $\tau_i^u$ with execution time $c_i^u$, error detection version $\tau_i^d$ with $c_i^d$, and error correcting version $\tau_i^c$ with $c_i^c$. The least protected one is $\tau_i^u$, it allows incorrect output, and only protects from errors that lead to system crash by affecting the remaining system.
+
+In the literature, several fault-tolerant software techniques require additional execution time for error handling, e.g., special encoding of data \cite{Schi2009}, control flow checking \cite{10.1109/CGO.2005.34}, and majority voting \cite{1633498}. We assume $c_i^u < c_i^d < c_i^c$ holds.
+
+\input{taskver.tex}
+
+\section{$(m,k)$ robustness requirement}
+To quantify the inherent tolerance of tasks to recover from previous instance's lack of or faulty output, we use the $(m_i,k_i)$ robustness requirement. $m$ out of any $k$ consecutive task instances have to be correct for the control application to  function without mission failure. $m_i$ and $k_i$ are both positive integers and $0 < m_i \le k_i$.
+
+For example, consider a control task controlling specific steering actions of a vehicle. Its robustness requirement could be that there are at least two correct in \textit{every} three instances, denoted as $(2,3)$. Fig. \ref{tab:recentexe} contains the information whether faults were injected into instances of $\tau_i$. If a fault was injected, we add "0" to the bitmap, otherwise we add "1", this is done for all instances of $\tau_i$.
+
+The iterative way of checking is called \textit{sliding window}, which is defined as follows: we first check the first three bits $\setof{1,1,0}$, then the second three $\setof{1,0,1}$, the third three $\setof{0,1,1}$, etc. All such sets in the bitmap have at least two correct task instances, we say the $(2,3)$ requirement is fulfilled. If the $(2,3)$ requirement is not fulfilled, e.g., $\setof{0,0,1}$ occurs in the bitmap, the vehicle may steer in a wrong direction and possibly cause an accident.
+
+\begin{figure}[h]
+\centering
+\large
+%|l|l|l|l|l|l|l|l|
+\begin{tabular}{|llllllll|}
+\hline
+
+1 & 1 & 0 & 1 & 1 & 0 & 1 & 1  \\ \hline
+\end{tabular}
+\caption{The bitmap of a task $\tau_i$ for eight executed instances. "1" represents instances without a fault, and "0" for instances with a fault.}
+\label{tab:recentexe}
+\vspace*{-3mm}
+\end{figure}
+
+\section{$(m,k)$-Pattern}
+If only $m$ out of $k$ instances need to be correct, then, to guarantee the correctness, one way is to execute $m$ of those task instances using $\tau^c_i$. We will see later that there are other approaches to guarantee the correctness as well.
+To have an "execution plan" of when to execute which task version, the $(m,k)$-pattern~\cite{Quan:2000:EFS:1890629.1890640,1661621} is introduced.  
+\begin{definition}{\textbf{1:}}
+The $(m,k)$-pattern of task $\tau_i$ is a binary string $\Phi_i = \setof{\phi_{i,0},\phi_{i,1},\ldots\phi_{i,(k_i-1)}}$ which satisfies the following properties: $\phi_{i,j}$ is a reliable instance if $\phi_{i,j}=1$ and an unreliable instance if $\phi_{i,j} = 0$ and $\sum^{k_i-1}_{j=0} \phi_{i,j} = m_i$ ~\cite{Chen2016}.
+\end{definition}
+For example, if the $(m,k)$ robustness requirement is given as $(3,5)$, then the $(m,k)$-pattern could be specified as $\Phi_i = \setof{0,0,1,1,1}$. 
+
+There are two types of patterns available for the user, i.e., R-patterns and E-patterns \cite{1661621}, \cite{Quan:2000:EFS:1890629.1890640}. An R-pattern contains all "0"s at the beginning and all "1"s at the end, such as in $\setof{0,0,0,1,1,1,1}$. An R-pattern is generated using the following rule:
+\[
+\phi_{i,j} = 
+  \begin{cases} 
+   1 & 1 \leq j \leq m_i \\
+   0 & m_i < j \leq k_i 
+  \end{cases} 
+\]
+\vspace{-0.5cm}
+\[
+j=0,1,\dots,k_i - 1
+\]
+In E-patterns, the pattern begins with a "0", and the "1"s and "0"s are distributed evenly. It is created with the following formula:
+
+\[
+\phi_{i,j} = 
+  \begin{cases} 
+   0, & \text{if}~j= \left \lfloor \left \lceil \frac{j\times(k_i - m_i)}{k_i} \right \rceil \times \frac{k_i}{(k_i - m_i)} \right \rfloor \\
+   1, & \text{otherwise} 
+  \end{cases}
+\]
+\vspace{-0.3cm}
+\[
+j=0,1,\dots,k_i - 1
+\]
+
+%The R-pattern is better in terms of processor utilization, since there are more consecutive "0"s, which gives the system more chances to tolerate errors. The E-pattern is better in terms of schedulability, because there are less consecutive "0"s in the $(m,k)$-pattern. More details on the processor utilization and schedulability can be found in \cite{Chen2016}. The pattern's correctness proofs of complying to an $(m,k)$ requirement can be found in \cite{1661621} and \cite{Quan:2000:EFS:1890629.1890640}. %When using SRE or SDR, if the FTS is at the last byte and bit of the pattern, it starts reading the first bit in the pattern again.
+
+\section{Schedulability and Scheduling}
+
+The FTS manages the executions of the different task versions by adopting Rate Monotonic scheduling. $\tau_1$ has the highest priority and $\tau_n$ the lowest. If all tasks meet their deadlines while $(m_i,k_i)$ holds for each $\tau_i$, then the schedule is feasible. For all the applied scheduling strategies,
+their  schedulability  tests  can  be  found in~\cite{Chen2016}.
+
+\section{Faults}
+In this section, transient faults and their impact on systems are introduced. An explanation of the application model, task versions, execution patterns, and the $(m,k)$ requirement is included as well.
+\subsection{Causes of Transient Faults} 
+Transient faults occur in hardware due to rising integration density, low voltage operation and environmental influences such as radiation and electromagnetic interference~\cite{1545891}. By lowering the voltage operation and integration density, the probability of faults increases, because less electrons are used to distinguish the state of the hardware. Through ionization, molecules and atoms which indicate the status of transistors are removed from their original place, if the radiation or electromagnetic influence is high enough~\cite{1545891}, causing bitflips, which means that a zero turns into a one or the other way around. In the worst case, bitflips could lead to irrecoverable system failure. They are dangerous and their effects need to be kept under control. 
+
+\subsection{Impact of Transient Faults}
+%TODO title
+In some cases, transient faults may have no noticeable consequences, because the flipped bit may not harmful to the system. A simple example is a scenario in which a bit was already read, the flip occurs after reading, and is ready to be overwritten. Another example is the situation in which the bitflip is not relevant for the result, such as in an OR chain, in case the deciding "1" is not affected.
+
+In the worst case, faults cause system or mission failure. For example, a flipped bit in a variable that points to a certain location may result in accessing wrong code, or invalid memory locations, potentially leading to a system crash.
+
+Some faults may remain unnoticed, such as in case of silent data corruption. If a variable in the memory is affected and its value is used for calculations, computation could proceed as planned, but with faulty output values, which may lead to disasters.
+
+\subsection{Faults in the Fault Tolerant Scheduler}
+
+The scheduler is designed to handle faults which appear in certain parts of the task entity, i.e., variables in main memory, cache, register, and during data transfer of these values between hardware components, such as sensor sampling data. We assume that the faulty value is within the range of the values the memory address or sensor value can adopt. For example, in case of a fault in sensor sampling data, the sensor sampling value can only assume values between the minimum and maximum possible sensor value. The system is protected by the FTS scheduler from incorrect calculations incurred by transient faults. When there is faulty  control task output, it can be detected and corrected.
+
+The FTS can only protect from faults which do not cause an unrecoverable system state. For example, the FTS can not protect the system if a fault occurs in the instruction code of the scheduler itself, in that case the operating system may crash.
+
+From the execution versions which are provided by the RTEMS user, we expect that detection and correction are always (or with very high probability) possible; all errors need to be detected and corrected successfully. If silent data corruption occurs - when errors remain unnoticed but computation continues as usual - it would be fatal for the system if the detection or correction rate would not be sufficiently high. This could lead to mission failure, such as in the case of satellite Hitomi \cite{hitomi}.

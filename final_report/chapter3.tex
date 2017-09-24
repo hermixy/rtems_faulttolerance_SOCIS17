@@ -1,0 +1,575 @@
+%chapter3.tex
+\chapter{Implemented Compensation Techniques}
+The techniques which decide when to execute which task version for $\tau_i$ to enforce $(m_i,k_i$) requirements using $(m,k)$ patterns are discussed in this section.
+\section{Static Pattern Based Execution} 
+
+A robustness requirement could be given as $(3,5)$, then one way to define the $(m,k)$-pattern is $\Phi=\setof{0,1,0,1,1}$. Executing all instances denoted as "1" with $\tau^c_i$ and executing the instances marked with a "0" using $\tau^u_i$  satisfies the $(3,5)$ requirement. Directly executing $\tau_i^c$ this way is called Static Reliable Execution (S-RE). $\setof{\tau^u, \tau^c, \tau^u, \tau^c, \tau^c}$ is the schedule for this specific task; the sum of the execution times for one completion of the string is $2c^u + 3c^c$. 
+
+An improvement of S-RE, called Static Detection and Recovery (S-DR), gives a try with a fault-detecting version when there is a "1" in the pattern, and immediately executes $\tau_i^c$ if an error is detected. If we assume an error occurs on the second instance, a possible schedule is $\setof{\tau^u, \tau^d + \tau^c, \tau^u, \tau^d, \tau^d}$ for the pattern above. If errors occur in every instance, then in the worst case, the sum of the execution times is $2c^u + 3(c^d+c^c)$. 
+
+Figure~\ref{staticex} shows S-RE in the first diagram. The system just follows the pattern, and if an error occurs in one instance, then it will either be corrected by the $\tau_i^c$, or the error will be tolerated, because the $(m,k)$ requirement is always fulfilled.
+
+In the second diagram with S-DR, the system follows the pattern as well, but always gives a try with $\tau_i^d$ first if the bit in the pattern is a "1". An error occurs in the second instance, so the system has to execute $\tau_i^c$ immediately after the detection version.
+
+\input{p11.tex}
+
+\section{Dynamic Compensation}
+
+This part of the report first discusses the main principle behind dynamic compensation: postponing the moment the system adopts the $(m,k)$ pattern. Then the algorithm is presented which illustrates dynamic compensation in pseudo-code. At the end of this chapter, examples outline the difference between the static and dynamic techniques.
+This chapter concludes the basics which are necessary to understand the techniques and the underlying principles of the FTS, which were implemented in RTEMS.
+
+Soft-errors happen randomly from time to time, and the likelihood of their occurrence is not very high. Minimizing the executions of $\tau^c$ tasks is one of the main goals in these techniques, as $\tau^c$ is costly considering execution time and energy consumption. We only want to execute $\tau^c$ if it is absolutely necessary.
+
+Dynamic compensation enhances S-RE and S-DR by making decisions on-the-fly. The main idea is to postpone the moment the system enforces the $(m_i,k_i)$ requirement by exploiting the correctness of successful $\tau_i^d$ executions. In the worst case, if all $\tau_i^d$ are wrong, the system will adopt the execution pattern by executing at least $m$ correct instances in a sliding window size of $k$. To detect errors in dynamic compensation, all instances that are executed before a "0", and become $S$ if they are correct, need to be executed with $\tau^d$.
+
+\subsection{Postponing the (m,k)-Pattern}
+We suppose that a static pattern $\Phi_i$ is given, which is a binary string, containing the information about which version of a task to execute. As explained earlier, dynamic compensation allows to exploit the correctness of completed and successful executions of unreliable instances. To be specific, dynamic compensation counts the successful (i.e., correct) executions of $\tau^d$ instances, and then exploits their correctness by postponing the adoption of the $(m,k)$-pattern by the number of successful executions. These completed and correct task instances are defined as $S$ and stand for success. $S$ allows us to greedily postpone the adoption of the original static pattern $\Phi_i$. We can think of it as inserting $S$ into the bitstring, but only at the beginning of the pattern. $S$ or multiple $S$ can only be inserted before a "0", as only "0" gives the system \textit{a chance} to tolerate an error. 
+
+If we take the pattern $\setof{0,1,0,1,1}$ for example, it will have the form $\setof{S,0,1,0,1}$ at $t=1$ and $\setof{S,S,0,1,0}$ after two time units $t=2$ of a task cycle, when $t=0$ is the starting point and no faults occur. Because of the successful execution of two task instances, denoted as $S$ in the pattern, the string at $t=2$ now lacks the last two "1"s from the original pattern. These two are pushed out of the string, and thus the adoption of the original pattern is postponed. If the $(m_i,k_i)$ pattern was $(3,5)$, then two instances out of $m_i=3$ were already processed correctly at $t=2$, which means that only one more task instance needs to be correct for the $(m_i,k_i)$ requirement to be fulfilled. $S$ instances are always executed with $\tau^d_i$ to detect errors. $S$ can be put as: \textit{gave a try with detection version, no error occurred; got away with it}.
+
+\subsection{Tolerance Counters}
+Because we can only give a try with $\tau_i^d$ if there is a "0" in the pattern, we need to partition it.
+Replenishment counters separate the original pattern into sub-patterns which begin with 0 and end with 1. These counters monitor the current status of fault tolerance and aid in run time execution in the algorithm. If the pattern $\setof{0,0,1,0,1,1}$ is given, it is divided into the two partitions $\setof{0,0,1}$ and $\setof{0,1,1}$. The rule is to divide the original pattern into smaller patterns that start with 0 and end with 1. 
+
+After the partitioning, the number of partitions are counted and their number is saved in $p_i$. The index of the task is denoted as $i$, and $j$ describes the current partition in the pattern. Counter $o_{ij}$ describes the number of "0"s in each partition and $a_{ij}$ counts the number of "1"s in each partition. Consequently, the counter $o_{ij}$ stands for the chances or tries in a partition the system has to be wrong, and $a_{ij}$ stands for the number of instances which have to be correct after $o_{ij}$ is depleted, when no more tries are allowed.
+
+To give an example we consider the pattern $\setof{0,0,1,0,1,1}$. In this case $p_i=2$, $o_{i1}=2$ , $a_{i1}=1$, $o_{i2}=1$, $a_{i2}=2$; we define $O_i = \setof{2,1}$  and $A_i =\setof{1,2}$. There are two $\tau_i^u$ instances in the first partition, $o_{i1}=2$ and one $\tau_i^c$ $a_{i1}=1$, whereas in the second partition, there is one unreliable $o_{i2}=1$ instance and there are two $\tau_i^c$ instances $a_{i2}=2$.
+
+If $o_{ij}$ is depleted by giving with tries with $\tau_i^d$ and failing due to errors, the system then has to follow the "1"s in the original pattern. To model that kind of switching behavior, a mode indicator $\Pi$ is used, to distinguish the execution status of dynamic compensation. With the definition of $\Pi=\setof{tolerant, safe}$ the current status of the task is specified. If the tolerance counter $o_{ij}$ is depleted and the system is not allowed to give any more tries, since it would violate the $(m_i,k_i)$ constraint in case of an error, $\Pi$ will be set to safe; in this case the task has to be correct.  However, if the task can still tolerate errors because the tolerance counter is not depleted, then $\Pi$ is set to tolerant. In this case the system still has chances, and $S$ could potentially be inserted into the pattern, thus the system is allowed to give tries with $\tau_i^d$.
+
+\subsection{Algorithm for Dynamic Compensation}
+The algorithm for dynamic compensation works on one of the partitions of an $(m,k)$-pattern. At the beginning, the index $j$ is passed while the mode is set depending on whether the tolerance counter $o_{ij}$ is depleted. If $\Pi$ is in tolerant mode, the algorithm executes $\tau^d_i$ which checks whether a fault was detected. If a fault is detected, then the tolerance counter $o_{ij}$ is decreased by one.
+
+If $o_{ij}$ is fully depleted, equal to zero, then the system is set to safe mode. $a_{ij}$ stores the number of instanced that have to be correct, thus in Line 9 the value of $a_{ij}$  is stored in $l$. 
+If $p_i$ is in safe mode, then $l$ will be decremented step by step till  it is equal to 0. When $l=0$, the task is set back to tolerant mode and the index $j$ is incremented; the next partition is processed by the algorithm, and $o_{ij}$ and $a_{ij}$ are replenished according to the new partition.
+When the system is in safe mode, there are two different strategies available. Although the system is in safe mode ($o_{ij}$ is already depleted), Dynamic Detection and Recovery (D-DR) will always execute $\tau_i^d$ of the task first. Thus the system still gives a try with $\tau_i^d$ and only executes $\tau_i^c$ if an error occurs in $\tau_i^d$. 
+
+Dynamic Reliable Execution (D-RE) on the other hand will always execute $\tau_i^c$ directly if the system is in safe mode.
+
+\begin{algorithm}[h]
+\caption{Dynamic compensation of task $\tau_i$ with $(m_i,k_i)$, adapted from~\cite{Chen2016}}
+  \label{alg:dyn}
+  \begin{algorithmic}[1]  
+ 
+  \STATE \textbf{procedure} dyn\_Compensation($ mode~\Pi, index ~j$)
+  \IF{$\Pi$ is $tolerant\_mode$}
+	  \STATE $result =$ execute($\tau_i^d$);
+  	  \IF{Fault is $detected$ in $result$}
+  	  	\STATE $o_{i,j}=o_{i,j}-1$;
+  	  	\STATE Enqueue\_Error($o_{i,j}$);
+  		\IF{$o_{i,j}$ is equal to $0$} %depleted
+	      	\STATE Set $\Pi$ to $safe\_mode$;
+	      	\STATE Set $\ell$ to $a_{i,j}$;
+		\ENDIF
+  	  \ENDIF  	  
+  \ELSE
+  	  \STATE either Detection\_Recovery() or Reliable\_Execution();
+	  \STATE $\ell = \ell-1$;
+	  \IF{$\ell$ is equal to $0$} %depleted
+      	\STATE Set $\Pi$ to $tolerant\_mode$;
+      	\STATE $j=(j+1)$~mod~$k_i$;
+	  \ENDIF      
+  \ENDIF
+  \STATE Update\_Age($\mathbb{O}_i$);
+  \STATE \textbf{end procedure}
+  \end{algorithmic}
+\end{algorithm}
+\section{Summary of Soft-Error Handling techniques}
+
+In this work, the four soft-error handling techniques are implemented. To give a quick overview, the techniques are presented one below the other. 
+
+In Figure~\ref{fig:illu}, in the first diagram, the system uses S-RE and just follows the pattern $\setof{0,1,1}$ for the $(2,3)$ requirement. When using S-DR, the system executes $\tau_i^u$ in the first instance, since there is a "0" in the pattern. In the second and third task instance, it executes $\tau_i^d$ for every "1" in the pattern and immediately releases $\tau_i^c$ when an error is detected.
+
+When D-RE is used, the system gives a try with $\tau_i^d$ in the first task instance. The task is correct, so the system still has one chance to be wrong. Thus, in the second task instance, it gives a try with $\tau_i^d$ again. An error occurs in the second instance, but since the system can tolerate one error due to its constraint, it can move on without taking action against the error. However, the system has to execute $\tau_i^c$ in the third task instance to comply to $(2,3)$, since an error already occurred in the second instance. 
+The only difference between D-DR and D-RE is that D-DR still gives a try with $\tau_i^d$, although the $(2,3)$ requirement would be violated if an error occurred. The system detects an error and executes $\tau_i^c$ afterwards in the third instance.
+\vspace{-0.3cm}
+
+\begin{itemize}
+\item Pattern-Based Execution
+
+\vspace{-0.3cm}
+	\begin{itemize}	\item S-RE: Runs task version  $\tau_i^c$ for instances marked as "1", $\tau_i^u$ otherwise.
+	\item S-DR: Runs task version  $\tau_i^d$ for instances marked as "1" and recovers executing $\tau_i^c$ if an error is detected in $\tau_i^d$.
+	\end{itemize}
+
+\vspace{-0.5cm}
+
+\item Dynamic Compensation
+
+\vspace{-0.3cm}
+
+	\begin{itemize}
+	\item D-RE: Runs execution version $\tau_i^c$ if the tolerance counter is depleted, $\tau_i^d$ otherwise.
+	\item D-DR: Runs execution version $\tau_i^d$ if the tolerance counter is depleted; runs execution version $\tau_i^c$ for recovery if an error is detected in $\tau_i^d$ in this case.
+	\end{itemize}
+\end{itemize}
+\input{illuExample.tex}
+
+\chapter{Fault Tolerant Scheduler integrated in RTEMS}
+In this chapter, the inner workings of the FTS are presented. Before reading this chapter, it is recommended to read the chapter about the rate-monotonic scheduler in \cite{rmtut} first. The rate monotonic (RM) scheduler was chosen to be extended with the FTS, because RM scheduling allows us to guarantee the schedulability of the system, and is widely used in practice. With a few modifications, the FTS can be used with other fixed priority scheduling algorithms too.
+
+\section{FTS Workflow}
+\begin{figure}[h]
+\begin{center}
+\begin{tikzpicture}
+
+%create, RM period block
+  \begin{scope}[shift={(0,0)}]
+  	\node at (2.25, 3.25) {\Large{User Application}};
+    \draw (0,0) rectangle (4.5,3);
+		\node at (1.35, 2.5) {Create Period};
+		\node at (2.15, 2) {Register Period in FTS};    
+    	\node at (1, 1.5) {while(1)\{};
+    	\node at (1.5, 1) [fill = gray] {RM Period};
+    	\node at (0.35, 0.5) {\}};
+    	
+    	%arrows
+    	\node (v1) at (2.4125, 1) {};
+		\node (v2) at (5.65, 1) {};
+		\draw [-triangle 60] (v1) -- (v2);
+  \end{scope}
+
+%FTS scheduler block  
+  \begin{scope}[shift={(5.5,0)}]
+  	\node at (2.25, 3.25) {\Large{FTS}};
+  	\draw (0,0) rectangle (4.5,3);
+  		\node at (2.25, 2.5) {Techniques};
+		\node at (1, 1.75) {Static:};
+		\node at (1.25, 0.75) {Dynamic:};  		
+  		\node at (3.25, 2) {SRE};
+  		\node at (3.25, 1.5) {SDR};
+  		\node at (3.25, 1) {DRE};
+  		\node at (3.25, 0.5) {DDR};
+  		
+  		%arrows
+    	\node (v3) at (4.35, 1.5) {};
+		\node (v4) at (5.65, 1.5) {};
+		\draw [-triangle 60] (v3) -- (v4);
+  \end{scope}	
+ 
+%Execution version block  
+  \begin{scope}[shift={(11,0)}]
+  	\draw (0,0) rectangle (4.5,3);
+  		\node at (2.25, 3.25) {\Large{Task Versions}};
+  		\node at (2.25, 2.25) {\large{Basic}};
+  		\node at (2.25, 1.5) {\large{Detection}};
+  		\node at (2.25, 0.75) {\large{Correction}};
+  \end{scope}	
+
+\end{tikzpicture}
+\caption{The flow diagram of the FTS. The while-loop calls RM Period, which in turn calls the FTS. The FTS, depending on its configuration, selects and releases the task versions.}
+\label{flowFTS}
+\end{center}
+\end{figure}
+Before using the FTS, the user has to implement the three task versions, which are basic version, detection version, and correction version. When calling the function which creates the period object, the period's ID is used to register the period for protection in the FTS. After creation, the period has to be implemented as specified in \cite{rmtut}, using a while-loop and calling the period function in every iteration of the while-loop.    
+
+Every time the period function is called, the rate monotonic scheduler calls the FTS, as can be seen in Figure \ref{flowFTS}. The FTS then decides which version of the task to create and release. The decision is made based on the configuration of the FTS, e.g., fault-tolerance technique, $(m,k)$ requirement, and using R- or E-patterns. 
+
+All task versions that were started within one period are deleted at the beginning of the next period, preventing overload situations.
+
+\section{Extending the RM Scheduler with the FTS}
+To integrate the FTS in the RM scheduling policy, the two files $ratemoncreate.c$ and $ratemonperiod.c$ were extended with function calls to the FTS. This section describes where in the RM scheduling code these function are called.
+
+\subsection{Changes in $ratemoncreate.c$}
+When the user usually creates a RM period using the function $rtems\_rate\_monotonic\_create$ (without using the FTS), a series of steps are executed. First, the RM scheduler allocates space for the period object that is created. Then, the system obtains a lock to protect the period object, to set its specifications in an exclusive manner. After setting the priority of the period, the period owner, which is the task initiating the creation of the period object, is stored in the period object in the next step, and the state of the period object is set to be inactive. Then, the watchdog timer is initialized and assigned to the period object. When the creation of the period object is completed, the period object ID is set and the lock can finally be released. 
+
+In the changed $ratemoncreate.c$ file, after the object creation and the lock release, the function $fts\_rtems\_task\_register\_t$, which is implemented in the FTS, is called. With this function call, the period ID is registered for protection in the FTS. The code added in $ratemoncreate.c$ can be viewed in the following.
+\begin{lstlisting}
+  /* Create period object and set its specification */	
+    ...
+  /* Set FTS data */
+  uint8_t reg = fts_rtems_task_register_t(
+  id,
+  m,
+  k,
+  tech,
+  pattern_s,
+  versions,
+  specs
+  );
+
+  if ( reg == 0 ) 
+  {
+    printf("\nCould not register ID in the FTS\n");
+    return RTEMS_INVALID_NUMBER;
+  }
+\end{lstlisting}
+\subsection{Changes in $ratemonperiod.c$}
+In $ratemonperiod.c$, two lines were added, which are call the FTS, which in turn release the task versions.
+\begin{lstlisting}[language=C]
+fts_version ver = fts_compensate_t(the_period->Object.id);
+\end{lstlisting}
+There are two places in the code where this function call to the FTS is made. The first insertion is in the function $\_Rate\_monotonic\_Release\_job$. This function is called when the RM scheduler wants to release a job. The owner of the period, which is the task which calls $rtems\_rate\_monotonic\_period$ to start a new period, is scheduled by the function call $\_Scheduler\_Release\_job$. After the locks are released on the needed data structures to release a job of the owner, the function call $fts\_compensate\_t$ is made, to call the FTS, which in turn starts the task versions based on its configuration.
+
+The second insertion of $fts\_compensate\_t$ is when postponed jobs are released, in the function $\_Rate\_monotonic\_Release\_postponed\_job$, again at the end of this function when the a job of the owner is released, and all locks on data structured are released.
+
+\section{Implementation of the Fault Tolerance Techniques}
+This section is about the implementation of the fault-tolerance techniques in RTEMS. The static approaches SRE and SDR use the predefined $(m,k)$-pattern to decide which version of the task to execute, whereas the dynamic approaches DRE and DDR calculate tolerance counters based on the $(m,k)$-pattern.
+
+\subsection{SRE and SDR Pattern Iteration}
+How an $(m,k)$-pattern can be specified with pointers in the FTS was described in the API section earlier. In the FTS, SRE and SDR follow this given static $(m,k)$-pattern to execute task versions while satisfying $(m,k)$ requirements. 
+The FTS iterates through this pattern with bit wise operations. The current byte's current bit is retrieved by bit wise AND. For example, if $\setof{101\color{red}{1}\color{black}1011}$ is the current byte, and $bit\_pos$ is 3, the red "1" tells us  to execute a reliable version next. We do the operation
+$101\color{red}{1}\color{black}1011~\&~000\color{red}{1}\color{black}0000$ to decide which task version to execute.
+If current iteration step is in the last byte's last bit, the current byte will be set to the beginning address of the pattern, and $bit\_pos$ is set to zero.
+
+\subsection{DRE and DDR Tolerance Counters}
+At first, all tasks that were started in the previous period get deleted at the start of a new period. The comment in Line~5 explains why the task with the ID equal to zero must not be deleted. Then, the tolerance counters are processed, beginning in Line~32. In DRE and DDR, the FTS does not follow the $(m,k)$-pattern, but calculates the tolerance counters based on the $(m,k)$-pattern, and then executes Algorithm \ref{alg:dyn}. The FTS first checks the pattern type of the $(m,k)$-pattern. In case of R-pattern, there are only two partitions, and thus only two tolerance counters $o_i$ and $a_i$. For E-patterns, the FTS divides the $(m,k)$-pattern into sub-patterns which begin with "0" and end with "1". After partitioning, for every partition in the $(m,k)$-pattern $o_i$ and $a_i$ are created.
+At the beginning of each period, to keep the tolerance counters up to date, the the RM period checks whether the tolerance counters are depleted. If they are depleted, they get replenished again. 
+
+The code which was added in $ratemonperiod.c$ in the function $rtems\_rate\_monotonic\_period$ is shown below. The code is added at the beginning of this function, but after the lock for the period object has been acquired. 
+
+\begin{lstlisting}[language=C]
+  /* check if period is registered in the FTS */
+  int16_t i = task_in_list_t(the_period->Object.id);
+  if (i != -1)
+  {
+    /** 
+     * At beginning of new period, delete all tasks from last period if their ID is not 0.
+     * If the ID is 0, which happens when the variables running_id_b/d/c are not set at all, or set to 0
+     * then don't delete the task, otherwise the task with ID==0 will be deleted,
+     * which is possibly the first task in the system.
+     *
+     * Delete all tasks at the beginning of a new period.
+     */
+    if (running_id_b[i] != 0)
+    {
+      task_status( rtems_task_delete( running_id_b[i] ) );
+      running_id_b[i] = 0;
+    }
+
+    if (running_id_d[i] != 0)
+    {
+      task_status( rtems_task_delete( running_id_d[i] ) );
+      running_id_d[i] = 0;
+    }
+
+    if (running_id_c[i] != 0)
+    {
+      task_status( rtems_task_delete( running_id_c[i] ) );
+      running_id_c[i] = 0;
+    }
+  }
+
+  /* If dynamic compensation is used, replenish tolerance counters when they are depleted */
+  if( (i != -1) && ( (list.tech[i] == DRE) || (list.tech[i] == DDR) )  )
+  {
+    if ( ((tol_counter_temp[i]).tol_counter_a[partition_index[i]]) == 0)
+    {
+      /* replenish only if at end of last partition (a is 0) */
+      if ( (nr_partitions[i] == partition_index[i]) && (tol_counter_temp[i].tol_counter_a[nr_partitions[i]] == 0) )
+      {
+        tolc_update(i);
+      }
+      else
+      {
+        /* was not in last partition */
+        partition_index[i]++;
+      }
+    }
+}
+\end{lstlisting}
+
+\section{FTS API}
+In this section, the API functions which the user has to call to use the FTS are presented. The maximum number of tasks that can be registered in the FTS can be changed in the header file $fts\_t.h$ with \mbox{P\_TASKS}, and the maximum number of partitions of an $(m,k)$-pattern can be changed with \mbox{PATTERN\_PARTITIONS}.
+\subsection{Creating an RM FTS period}
+The user has to call the function $rtems\_rate\_monotonic\_create\_fts$, which is implemented in $ratemoncreate.c$, to create a period and register it to the FTS for protection. 
+\begin{lstlisting}[language=C]
+rtems_status_code rtems_rate_monotonic_create_fts(
+  rtems_name  name,
+  rtems_id   *id,
+  uint8_t m,
+  uint8_t k,
+  fts_tech tech,
+  pattern_specs *pattern_s,
+  task_versions *versions,
+  task_user_specs *specs
+)
+\end{lstlisting}
+The $rtems\_rate\_monotonic\_create\_fts$ has a lot of parameters, all of which have to be set. First, a name for the period has to be built, for example with: \begin{verbatim}
+rtems_name period_name = rtems_build_name('R', 'M', 'P', '');
+\end{verbatim}
+
+\begin{verbatim}
+rtems_id   *id
+\end{verbatim}
+With $rtems\_id~~*id$, the pointer to the ID of the RM period is passed. 
+\begin{verbatim}
+uint8_t m
+uint8_t k
+\end{verbatim}
+With $uint8\_t~~m$ and $uint8\_t~~k$, $m$ and $k$ of the desired $(m,k)$-pattern are specified.
+\begin{verbatim}
+fts_tech tech
+\end{verbatim}
+Using $tech$, the fault tolerance technique is chosen; available are \mbox{SRE}, \mbox{SDR}, \mbox{DRE}, and \mbox{DDR}, which are enums of $fts\_tech$.
+\begin{verbatim}
+pattern_specs *pattern_s
+\end{verbatim}
+The $(m,k)$-pattern needs to be specified using a $pattern\_specs$ struct, which contains a number of variables. First, the pattern type needs to be specified with either \mbox{R\_PATTERN} or \mbox{E\_PATTERN}. To be able to adopt the given $(m,k)$-pattern, the three parameters $uint8\_t*~~  pattern\_start$, $uint8\_t*~~pattern\_end$, and $uint8\_t~~max\_bitpos$ have to be specified by the user\footnote{Automatic allocation of memory space to store the $(m,k)$-pattern will be available later, after more tests with control applications have been done.}.
+The starting and ending address of the pattern is specified by $pattern\_start$ and $pattern\_end$, which are pointers to a $uint8\_t$ variable.
+\begin{verbatim}
+typedef struct Pattern_Info {
+  pattern_type pattern;
+  uint8_t *pattern_start;
+  uint8_t *pattern_end;
+  uint8_t max_bitpos;
+} pattern_specs;
+\end{verbatim} 
+Where the pattern should end, for example in midst of a byte, can be specified with the variable $max\_bitpos$ ( set to 0 if the first bit of the last byte, and 7 if the last byte of the bit is chosen).
+\begin{verbatim}
+task_versions *versions
+\end{verbatim}
+The struct holding the execution versions of a task is specified with the pointers to the three task versions basic $b$, detection $d$ and correction $c$.
+\begin{verbatim}
+typedef struct Exec_Versions {
+  rtems_task    *b;
+  rtems_task    *d;
+  rtems_task    *c;
+} task_versions;
+\end{verbatim}
+
+\begin{verbatim}
+task_user_specs *specs
+\end{verbatim}
+The specifications of the task versions when creation them in the FTS are specified with the following struct.
+\begin{verbatim}
+typedef struct Task_Specs_User {
+  rtems_task_priority  initial_priority;
+  size_t               stack_size;
+  rtems_mode           initial_modes;
+  rtems_attribute      attribute_set;
+} task_user_specs;
+\end{verbatim}
+When all the info for the FTS is ready, they can be passed to the RM scheduler, which in turn passes the info to register the period ID in the FTS.
+
+\subsection{Fault Detection Routine}
+At the end of the detection version, when the task finished computing, the user has to call the fault detection routine. The fault detection mechanism is implemented by the user in the detection version. The detection version calls the routine \mbox{$fault\_detection\_routine$} to report whether a fault occurred. The fault detection routine then initiates the reaction of the FTS to the fault. In case a fault is detected, the FTS can tolerate it, or release a correction task version when necessary. 
+
+The parameter list includes the ID of the period and the fault status of the computation of the task. The period ID is retrieved using the task argument of the detection version, see Line~11. When a fault was detected by the detection version, $fault\_status$ needs to be specified as \mbox{FAULT}, or in case no fault occurred, with \mbox{NO\_FAULT}. The fault detection routine is called in Line~18.
+\begin{lstlisting}[language=C]
+void fault_detection_routine(
+  rtems_id id,
+  fault_status fs
+)
+
+/* Example for detection task version */
+rtems_task DETECTION_V(
+  rtems_task_argument argument
+)
+{
+  rtems_id id = *((rtems_id*)argument);
+  printf("Detection: ID of my Period is %i\n", id);
+
+  /* Check whether a fault occurred */  
+  fault status fs_T1 = get_fault(get_rand());
+  
+  /* Call fault detection routine at the end of the detection version activity */
+  fault_detection_routine(id, fs_T1);
+  rtems_task_delete( rtems_task_self() );
+}
+\end{lstlisting}
+
+\section{Fault Injection and Detection to test the FTS in RTEMS}
+
+\subsection{Fault Injection Mechanism in RTEMS}
+To simulate the occurrence of faults, a fault injection mechanism is needed. The fault rate is specified as $p\%$ per task. Then, an integer seed variable is chosen, and the random number generator in C needs to be initialized with it by calling $srand(seed)$ once. This way the $rand()$ function gives us a sequence of random numbers when it is called sequentially. The sequence is the same for every seed value, i.e., $seed = 5$ gives us a certain sequence of random numbers, and $seed = 6$ a different sequence, but the sequences are reproducible.
+For example, the fault rate could be specified as $3\%$. Then a predefined number of random values in $[0,100]$ is created and the sequence is stored, as described in the function $rand\_nr\_list()$ below in Line~1.
+
+To decide whether a fault should be injected, we retrieve one value out of the array. Only if this random value is smaller than the fault rate, a fault is injected. The value random value is retrieved by the function $get\_rand()$ in Line~10, and the value $rand\_count$ specifies which random value has already been used. The function $get\_fault(...)$ in Line~15 checks whether the random number is smaller than the fault rate with $rand\_nr \leq fault\_rate$ and returns the fault status. The decision to inject a fault is determined by calling $get\_fault( get\_rand() )$, which returns the fault status. When testing the application with a control task in the future, a certain control value can be manipulated every time $get\_fault()$ returns a fault, e.g. the control value could be set to the maximum possible value to simulate the occurrence of a fault.
+\begin{lstlisting}[language=C]
+void rand_nr_list(void)
+{
+  for ( uint16_t i = 0; i < NR_RANDS; i++ )
+  {
+    rands_0_100[i] = rand() / (RAND_MAX / (100 + 1) + 1);
+  }
+  return;
+} 
+
+uint8_t get_rand(void)
+{
+  return rands_0_100[rand_count++];
+} 
+
+fault_status get_fault(uint8_t rand_nr)
+{   
+  if ( fault_rate == 0 )
+  {
+    return NO_FAULT;
+  }
+  else if ( rand_nr <= fault_rate )
+  {
+    faults++;
+    return FAULT;
+  }
+  else
+  {
+    return NO_FAULT;
+  }
+}
+\end{lstlisting}
+
+\subsection{Limitations of the Fault Injection and Error Handling}
+To demonstrate that the FTS works correctly, an event is used to simulate the occurrence of a fault. The fault makes the FTS perform error handling routines, such as tolerating the error or changing to a correction version of the task. Error detection and correction are also assumed to be perfect, which means that we can always recover from soft-errors. This approach is a preliminary one, but we hope to improve the simulation of faults, as well as the error handling on other hardware in the future, for example on smaller robots.
+
+\section{Example: How to use the FTS Scheduler}
+The three execution versions have to be implemented first. The task argument has to be initialized as $rtems\_task\_argument~~argument$, because the FTS uses this argument to pass the period ID to the task versions. The detection version has to call the detection routine $fault\_detection\_routine(id,~~fs\_T1)$ at the end of its activity. For example, the three versions could print the ID of their period as follows:
+\begin{lstlisting}[language=C]
+/* Basic task version */
+rtems_task BASIC_V(
+  rtems_task_argument argument
+)
+{
+  rtems_id id = *((rtems_id*)argument);
+  printf("Basic: ID of my Period is %i\n", id);
+  rtems_task_delete( rtems_task_self() );
+}
+
+/* Detection task version */
+rtems_task DETECTION_V(
+  rtems_task_argument argument
+)
+{
+  rtems_id id = *((rtems_id*)argument);
+  printf("Detection: ID of my Period is %i\n", id);
+
+  /* Check whether a fault occurred */  
+  fault status fs_T1 = get_fault(get_rand());
+  
+  /* Call fault detection routine at the end of the detection version activity */
+  fault_detection_routine(id, fs_T1);
+  rtems_task_delete( rtems_task_self() );
+}
+
+/* Correction task version */
+rtems_task CORRECTION_V(
+  rtems_task_argument argument
+)
+{
+  rtems_id id = *((rtems_id*)argument);
+  printf("Correction: ID of my Period is %i\n", id);
+  rtems_task_delete( rtems_task_self() );
+}
+
+\end{lstlisting}
+We then take a look at the configuring of the FTS, all the information needs to be defined before the period is registered for in the FTS. From Lines 1-11 in the code below, the $(m,k)$-pattern specifications are initialized. The structs for the task versions and the user specifications for the task versions are initialized in Lines 14 and 17. In Line~20 and 21, the $(m,k)$ requirement is specified, and in Line~21, the fault tolerance technique is set.
+\begin{lstlisting}[language=C]
+/* last byte of (m,k)-pattern */
+uint8_t end_p = 0; 
+/* first byte of (m,k)-pattern */
+uint8_t begin_p = 0;
+/* store addresses */
+uint8_t * p_s = &begin_p;
+uint8_t * p_e  = &end_p;
+/* pattern specifications */
+pattern_specs p_specs;
+pattern_type patt = E_PATTERN;
+uint8_t maxbit = 7;
+
+/* task versions struct containing the task pointers to the execution versions */
+task_versions versions;
+
+/* task user specifications */
+task_user_specs task_sp;
+
+/* set (m,k) */
+uint8_t m = 12;
+uint8_t k = 16;
+
+/* set technique */
+fts_tech curr_tech = DDR;
+\end{lstlisting}
+Then, we look at how a period can be registered for protection in the FTS. We first use the Init task to create and start the task which runs the while-loop, which in turn calls the period function. A possible implementation of the task containing the while-loop is shown below.
+In Lines 6-10, the variables for the period, a status code variable, and an ID is initialized. In Lines 13-15, the task entry points of the task versions are stores in a struct. In Lines 18-22, the specifications of the task versions are set, and stored in a struct. The period is finally created in Lines 31 and 32, by calling $rtems\_rate\_monotonic\_create\_fts$. The while loop in Line~34 calls $rtems\_rate\_monotonic\_period$ in every invocation. This calls the FTS, which creates and starts the task versions.
+\begin{lstlisting}[language=C]
+/* Task 1 contains the while-loop */
+rtems_task FTS_TEST(
+  rtems_task_argument unused
+)
+{
+  rtems_status_code status;
+  rtems_id RM_period;
+  rtems_name rm_name = rtems_build_name( 'R', 'M', 'P', ' ');
+  rtems_id selfid = rtems_task_self();
+  rtems_rate_monotonic_period_status period_status;
+
+  /* Store addresses of task pointers in struct */
+  versions.b = &BASIC_V;
+  versions.d = &DETECTION_V;
+  versions.c = &CORRECTION_V;
+
+  /* Store pattern specifications in struct */
+  p_specs.pattern = patt;
+  p_specs.pattern_start = p_s;
+  p_specs.pattern_end = p_e;
+  p_specs.max_bitpos = maxbit;
+
+  /* All task versions have the same specifications, store them in struct */
+  rtems_task_priority prio = 1; 
+  task_sp.initial_priority = prio;
+  task_sp.stack_size = RTEMS_MINIMUM_STACK_SIZE;
+  task_sp.initial_modes = RTEMS_DEFAULT_MODES;
+  task_sp.attribute_set = RTEMS_DEFAULT_ATTRIBUTES;
+
+  /* create a period and register the task set for RM-FTS */
+  status = rtems_rate_monotonic_create_fts( rm_name, &RM_period,
+   m, k, curr_tech, &p_specs, &versions, &task_sp );
+
+  while (1)
+  { /* task versions are released by the FTS in every new period */
+    status = rtems_rate_monotonic_period( RM_period, 100 );
+
+    if( status == RTEMS_TIMEOUT )
+    {
+      printf("\nPERIOD TIMEOUT\n");
+      break;
+    }
+  }
+
+  status = rtems_rate_monotonic_delete( RM_period );
+  if ( status != RTEMS_SUCCESSFUL )
+  {
+      printf( "rtems_rate_monotonic_delete failed with status of %d.\n", status );
+      exit( 1 );
+  }
+  status = rtems_task_delete( selfid );    /* should not return */
+  printf( "rtems_task_delete returned with status of %d.\n", status );
+  exit( 1 );
+};
+\end{lstlisting}
+
+\section{Enable the FTS in RTEMS}
+The requirement for adding the FTS to an RTEMS system is that the RTEMS tools and kernel were already built, for example by following the Quick Start guide in the RTEMS user manual \cite{rtemsuser}.
+To add the FTS to an RTEMS system, navigate to the kernel, then into $cpukit/rtems$, open $Makefile.am$, and add the following lines:
+\begin{lstlisting}
+ include_rtems_rtems_HEADERS += include/rtems/rtems/fts_t.h 
+ librtems_a_SOURCES += src/fts_t.c
+\end{lstlisting}
+The $.h$ line belong where the other header files are included too, but above $if~HAS\_MP$. The $.c$ line has to be added at the bottom of the file, but above $if~HAS\_MP$ as well. 
+
+Then navigate to the location of the classical C API header files and copy the $fts\_t.h$ file there (in $cpukit/rtems/include/rtems/rtems$ for me). The $fts\_t.c$ file needs to be copied into the source folder of the classical C API (in $cpukit/rtems/src$ for me). Next, replace the standard $ratemoncreate.c$ and $ratemonperiod.c$ files with the ones from my repository. There will be a package with all the files needed, with the name "rmftspatch" and uploaded in \cite{gitmyay}.
+
+From here on, all the file locations for the commands below need to be adapted to your own system. The next step is to bootstrap. Make sure to set your path with
+\begin{lstlisting}[language=bash]
+export PATH=$HOME/development/rtems/4.12/bin:$PATH
+\end{lstlisting}
+and navigate to the location of bootstrap, $rtems/kernel/rtems$. The bootstrapping can proceed:
+\begin{lstlisting}[language=bash]
+./bootstrap -c && ./bootstrap -p && \
+$HOME/development/rtems/rsb/source-builder/sb-bootstrap
+\end{lstlisting}
+We then navigate to $/kernel/erc32$ and run the configure script, for the erc32 board support package, the command is:
+\begin{lstlisting}[language=bash]
+$HOME/development/rtems/kernel/rtems/configure --prefix=$HOME/development/rtems/4.12 \
+--target=sparc-rtems4.12 --enable-rtemsbsp=erc32 --enable-posix
+\end{lstlisting}
+The only thing left to do is running 
+\begin{lstlisting}[language=bash]
+make
+make install
+\end{lstlisting}
+to compile the system. You can now access the FTS code in your user application by adding
+\begin{lstlisting}[language=C]
+#include <rtems/rtems/fts_t.h> 
+\end{lstlisting}
+in your implementation.
